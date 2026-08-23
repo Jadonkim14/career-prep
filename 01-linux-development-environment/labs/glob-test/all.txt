@@ -1,0 +1,11 @@
+ls: cannot access '/nonexistent': No such file or directory
+/tmp:
+node-compile-cache
+remote-wsl-loc.txt
+snap-private-tmp
+systemd-private-0038763fd2e44986bda80f936a5ad299-chrony.service-zKphqH
+systemd-private-0038763fd2e44986bda80f936a5ad299-polkit.service-i7Wkau
+systemd-private-0038763fd2e44986bda80f936a5ad299-systemd-logind.service-GdYsW2
+vscode-distro-env.5UCUar
+vscode-distro-env.nDaPYa
+vscode-distro-env.oqgLXL

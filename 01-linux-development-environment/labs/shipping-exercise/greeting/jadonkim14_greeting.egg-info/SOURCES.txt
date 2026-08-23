@@ -1,0 +1,8 @@
+greeting.py
+pyproject.toml
+jadonkim14_greeting.egg-info/PKG-INFO
+jadonkim14_greeting.egg-info/SOURCES.txt
+jadonkim14_greeting.egg-info/dependency_links.txt
+jadonkim14_greeting.egg-info/entry_points.txt
+jadonkim14_greeting.egg-info/requires.txt
+jadonkim14_greeting.egg-info/top_level.txt

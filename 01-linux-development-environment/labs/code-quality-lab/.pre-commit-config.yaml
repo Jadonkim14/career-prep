@@ -1,0 +1,15 @@
+repos:
+  - repo: local
+    hooks:
+      - id: clang-format
+        name: clang-format
+        entry: clang-format --dry-run --Werror
+        language: system
+        files: \.(c|cc|cpp|cxx|h|hpp)$
+
+      - id: clang-tidy
+        name: clang-tidy
+        entry: clang-tidy
+        language: system
+        files: \.(c|cc|cpp|cxx)$
+        args: ["--extra-arg=-std=c++17"]

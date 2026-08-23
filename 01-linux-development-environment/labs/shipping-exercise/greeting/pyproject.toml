@@ -1,0 +1,12 @@
+[project]
+name = "jadonkim14-greeting"
+version = "0.1.0"
+description = "A simple greeting CLI"
+dependencies = ["typer>=0.9"]
+
+[project.scripts]
+greet = "greeting:cli"
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"

@@ -1,0 +1,5 @@
+Metadata-Version: 2.4
+Name: greeting
+Version: 0.1.0
+Summary: A simple greeting CLI
+Requires-Dist: typer>=0.9
