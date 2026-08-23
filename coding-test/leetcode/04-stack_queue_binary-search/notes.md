@@ -46,8 +46,6 @@ unordered_map<char, char> pairs = {
 * 시간복잡도 **O(n)**, 공간복잡도 **O(n)**.
 * **`Valid Parentheses = Stack`을 암기하기보다, 최근에 들어온 것을 먼저 처리해야 하는 중첩 구조(嵌套结构) → Stack(栈)**을 떠올린다.
 
-그 아래에 이 정도만 붙이면 충분합니다.
-
 ### Stack 문법 정리
 
 ```cpp
@@ -150,3 +148,88 @@ q.pop();
 ```
 
 `[1,2,3] → [2,3,1]`
+
+
+## 0232. Implement Queue using Stacks (26.8.24)
+
+### 유형
+
+* Stack(栈)
+* Queue(队列)
+* FIFO(先进先出)
+* Amortized Analysis(均摊分析)
+
+### 처음 풀이
+
+* `s1`에 새 원소를 `push`.
+* `pop()` 또는 `peek()`할 때 `s1`의 마지막 원소 하나만 남을 때까지 `s2`로 이동.
+* 가장 먼저 들어온 원소를 꺼내거나 확인.
+* 이후 `s2`의 원소를 다시 `s1`으로 복구.
+* Queue의 FIFO를 Stack 두 개의 순서 뒤집기로 구현.
+
+```cpp
+while (s1.size() > 1) {
+    s2.push(s1.top());
+    s1.pop();
+}
+```
+
+### 개선점
+
+* 매 `pop()` / `peek()`마다 `s1 → s2 → s1`으로 옮기면 한 번의 연산에 **O(n)**이 걸린다.
+* 두 Stack의 역할을 분리한다.
+
+```text
+inStack  = 새 원소를 받는 Stack
+outStack = Queue의 front를 꺼내는 Stack
+```
+
+* `push()`는 항상 `inStack`에 넣는다.
+
+```cpp
+void push(int x) {
+    inStack.push(x);
+}
+```
+
+* `pop()` / `peek()` 시 `outStack`이 비어 있을 때만 `inStack → outStack`으로 이동한다.
+* 한 번 `outStack`으로 옮긴 원소는 다시 `inStack`으로 돌려놓지 않는다.
+
+```cpp
+void in2out() {
+    while (!inStack.empty()) {
+        outStack.push(inStack.top());
+        inStack.pop();
+    }
+}
+```
+
+* `in2out()`은 외부에서 직접 사용할 기능이 아니라 Queue 내부 구현을 위한 보조 함수이므로 `private`에 둔다 → Encapsulation(封装).
+
+* Queue가 비었는지는 두 Stack을 모두 확인해야 한다.
+
+```cpp
+return inStack.empty() && outStack.empty();
+```
+
+### 배운 점
+
+* Stack은 LIFO(后进先出), Queue는 FIFO(先进先出)이므로 **Stack을 한 번 뒤집으면 Queue의 순서를 만들 수 있다.**
+* `inStack`은 새로 들어오는 원소를 저장하고, `outStack`은 먼저 들어온 원소부터 꺼내는 역할을 한다.
+* 핵심은 **`outStack`이 비어 있을 때만 `inStack → outStack`으로 이동하는 것**이다.
+* `outStack`에 아직 원소가 있다면 새로 `push`된 원소보다 먼저 처리되어야 하므로 그대로 사용한다.
+
+```text
+push(1), push(2), pop(), push(3)
+
+inStack  = {3}
+outStack = {2}
+
+→ 다음 front는 3이 아니라 2
+```
+
+* `move` 자체는 한 번 실행할 때 **O(n)**일 수 있지만, 각 원소는 `inStack → outStack`으로 최대 한 번만 이동한다.
+* 따라서 `push`, `pop`, `peek`, `empty`의 **均摊时间复杂度(amortized time complexity)는 O(1)**이다.
+* 공간복잡도는 두 Stack에 전체 원소를 저장하므로 **O(n)**.
+* `Implement Queue using Stacks = Stack 2개`를 암기하기보다, **FIFO가 필요한데 LIFO 자료구조만 사용할 수 있음 → 한 Stack에 입력하고 다른 Stack으로 순서를 뒤집는다**는 구조를 떠올린다.
+* 외부에서 필요한 동작은 `public`, 내부 구현에만 필요한 데이터와 보조 함수는 `private`으로 숨길 수 있다 → Encapsulation(封装).
