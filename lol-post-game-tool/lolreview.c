@@ -8,7 +8,12 @@ typedef struct{
     char event[32];
 } Event;
 
-int main(){
+int main(int argc, char *argv[]){
+    if (argc < 2) {
+        printf("Usage: %s <match_file>\n", argv[0]);
+        return -1;
+    }
+
     char s[1024];
     FILE* fp;
     Event e;
@@ -16,8 +21,11 @@ int main(){
     int capacity = 4;
     int count = 0;
 
-    fp = fopen("match.txt", "r");
-    if(fp == NULL) return -1;
+    fp = fopen(argv[1], "r");
+    if(fp == NULL){
+        printf("Failed to open file: %s\n", argv[1]);
+        return -1;
+    } 
 
     events = malloc(sizeof(Event) * capacity);
     if(events == NULL){
@@ -75,9 +83,6 @@ int main(){
     int blue_dragon_count = 0;
     int red_dragon_count = 0;
     for(int i = 0; i < count; i++){
-        printf("time=%d team=%s event=%s\n"
-        ,events[i].time, events[i].team, events[i].event);
-
         if(strcmp(events[i].event, "KILL") == 0){
             if(strcmp(events[i].team, "BLUE") == 0)
                 blue_kill_count++;
@@ -93,36 +98,41 @@ int main(){
         }
     }
 
-    printf("\n");
-    printf("BLUE kills: %d\n", blue_kill_count);
-    printf("RED kills: %d\n", red_kill_count);
-    printf("BLUE dragons: %d\n", blue_dragon_count);
-    printf("RED dragons: %d\n", red_dragon_count);
+    printf("\n=== Match Summary ===\n");
+    printf("Kills: %d - %d\n", blue_kill_count, red_kill_count);
+    printf("Dragons: %d - %d\n", blue_dragon_count, red_dragon_count);
 
-    printf("\n");
-    printf("Events between 25:00 and 26:00:\n");
+    printf("\n=== Events 25:00 ~ 26:00 ===\n");
     for (int i = 0; i < count; i++) {
         if (events[i].time >= 1500 && events[i].time <= 1560) {
-            printf("time=%d team=%s event=%s\n", 
-                events[i].time, events[i].team, events[i].event);
+            printf("%d:%02d %s %s\n", 
+                events[i].time / 60, events[i].time % 60, 
+                events[i].team, events[i].event);
         }
     }
 
-    printf("\nCritical Moment\n");
+    int critical_count = 0;
     for (int i = 0; i < count - 2; i++) {
         if (strcmp(events[i].event, "DEATH") == 0 &&
             strcmp(events[i + 1].event, "DEATH") == 0 &&
             strcmp(events[i].team, events[i + 1].team) == 0 &&
             events[i + 1].time - events[i].time <= 30 &&
-            strcmp(events[i + 2].event, "BARON") == 0 &&
+            (strcmp(events[i + 2].event, "BARON") == 0 ||
+            strcmp(events[i + 2].event, "DRAGON") == 0 ||
+            strcmp(events[i + 2].event, "TOWER") == 0) &&
             strcmp(events[i + 2].team, events[i].team) != 0) {
             // Critical Moment candidate
+            critical_count++;
+            printf("\nCritical Moment #%d\n", critical_count);
             printf("%d:%02d ~ %d:%02d\n", events[i].time / 60,
             events[i].time % 60, events[i + 2].time / 60,
             events[i + 2].time % 60);
-            printf("2 Deaths -> Baron Lost\n");
+            printf("2 Deaths -> %s Lost\n", events[i + 2].event);
         }
     }
+
+    if(critical_count == 0) 
+        printf("\nNo Critical Moments\n");
 
     free(events);
     fclose(fp);
