@@ -233,3 +233,110 @@ outStack = {2}
 * 공간복잡도는 두 Stack에 전체 원소를 저장하므로 **O(n)**.
 * `Implement Queue using Stacks = Stack 2개`를 암기하기보다, **FIFO가 필요한데 LIFO 자료구조만 사용할 수 있음 → 한 Stack에 입력하고 다른 Stack으로 순서를 뒤집는다**는 구조를 떠올린다.
 * 외부에서 필요한 동작은 `public`, 내부 구현에만 필요한 데이터와 보조 함수는 `private`으로 숨길 수 있다 → Encapsulation(封装).
+
+
+## **0704. Binary Search (26.8.27)**
+
+### 유형
+
+* Binary Search(二分查找)
+* Sorted Array(有序数组)
+* Divide and Conquer(分治)
+* Search(查找)
+
+### 처음 풀이
+
+* 탐색 범위를 `first`, `last`로 설정.
+* 가운데 위치 `middle`의 값을 `target`과 비교.
+* `nums[middle] < target`이면 왼쪽 절반을 버리고 오른쪽 영역을 탐색.
+* `nums[middle] > target`이면 오른쪽 절반을 버리고 왼쪽 영역을 탐색.
+* `first > last`가 되면 탐색할 범위가 없으므로 `-1` 반환.
+* 매 반복마다 탐색 범위를 절반으로 줄여 `O(log n)`으로 탐색.
+
+```cpp
+if (nums[middle] < target) {
+    first = middle + 1;
+}
+else {
+    last = middle - 1;
+}
+```
+
+### 개선점
+
+* 처음 `middle`을 계산할 때도 반복문 내부와 동일하게 다음 형태를 사용하는 것이 좋다.
+
+```cpp
+int middle = first + (last - first) / 2;
+```
+
+* `(first + last) / 2`보다 위 형태를 사용하면 `first + last`에서 발생할 수 있는 Integer Overflow(整数溢出)를 피할 수 있다.
+
+* `while (nums[middle] != target)`보다 **탐색 가능한 구간이 남아 있는가**를 기준으로 반복하는 것이 Binary Search의 구조를 더 명확하게 표현한다.
+
+```cpp
+while (first <= last) {
+    int middle = first + (last - first) / 2;
+
+    if (nums[middle] == target) {
+        return middle;
+    }
+
+    if (nums[middle] < target) {
+        first = middle + 1;
+    }
+    else {
+        last = middle - 1;
+    }
+}
+
+return -1;
+```
+
+* 현재 탐색 구간을 `[first, last]`처럼 **양쪽 끝을 모두 포함하는 구간**으로 정의했기 때문에 탐색 조건은 다음과 같다.
+
+```cpp
+first <= last
+```
+
+* `first > last`가 되면 탐색 가능한 원소가 하나도 남지 않은 상태다.
+
+### 배운 점
+
+* Binary Search는 **정렬된 데이터에서 비교 결과를 이용해 탐색 범위의 절반을 버리는 알고리즘**이다.
+
+* Binary Search에서 중요한 것은 `middle` 계산 공식을 암기하는 것보다 **현재 탐색 범위에서 어떤 영역을 확실하게 버릴 수 있는지 판단하는 것**이다.
+
+```text
+nums[middle] < target
+→ [first, middle] 제거
+
+nums[middle] > target
+→ [middle, last] 제거
+```
+
+* 매번 탐색 범위가 절반으로 줄어들기 때문에 시간복잡도(Time Complexity / 时间复杂度)는 **O(log n)**이다.
+
+* 추가적인 자료구조를 사용하지 않으므로 공간복잡도(Space Complexity / 空间复杂度)는 **O(1)**이다.
+
+* `Binary Search = 정렬 배열에서 값 찾기`만 암기하지 않는다. 이후에는 다음과 같은 문제로 확장된다.
+
+```text
+정확한 값 찾기
+→ 704. Binary Search
+
+들어갈 위치 / 경계 찾기
+→ 35. Search Insert Position
+
+조건을 만족하는 값 찾기
+→ Binary Search on Answer
+
+회전된 정렬 배열 탐색
+→ 33. Search in Rotated Sorted Array
+```
+
+* `704. Binary Search = while + mid 공식`을 암기하기보다, **정렬되어 있음 → middle과 비교 → 정답이 존재할 수 없는 절반을 제거 → 남은 범위에서 반복**이라는 구조를 떠올린다.
+
+* 실무에서도 정렬된 대량 데이터의 검색뿐 아니라 **특정 조건을 처음 만족하는 위치나 최소/최대 가능한 값을 효율적으로 찾는 문제**로 Binary Search 사고방식이 활용될 수 있다.
+
+> **핵심:** `정렬된 탐색 공간 + 비교 결과로 절반을 확실히 제거할 수 있음 → Binary Search를 고려한다.`
