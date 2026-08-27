@@ -1,12 +1,3 @@
-맞아. **그렇게 분리하는 게 더 깔끔해.**
-
-루트 `README.md`는 프로젝트 전체를 설명하는 문서니까 **현재 V0.1의 구체적인 탐지 규칙과 한계까지 길게 적을 필요는 없어.** 그런 내용은 `V0.1` 문서에서 관리하는 게 맞아.
-
-### 프로젝트 `README.md`
-
-남길 내용은 이 정도면 충분해.
-
-````markdown
 # LoL Interactive Post-Game Review Tool
 
 ## Overview
