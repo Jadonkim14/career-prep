@@ -342,7 +342,7 @@ nums[middle] > target
 > **핵심:** `정렬된 탐색 공간 + 비교 결과로 절반을 확실히 제거할 수 있음 → Binary Search를 고려한다.`
 
 
-**## 0035. Search Insert Position (26.9.1)**
+## 0035. Search Insert Position (26.9.1)
 
 **### 유형**
 
@@ -390,3 +390,37 @@ int middle = left + (right - left) / 2;
 * 공간복잡도(Space Complexity / 空间复杂度): `O(1)`
 
 > **핵심:** `nums[middle] < target`이면 `left`를 오른쪽으로, `nums[middle] > target`이면 `right`를 왼쪽으로 이동시키면, 탐색 종료 후 `left`가 target의 삽입 위치가 된다.
+
+
+## 0374. Guess Number Higher or Lower (26.9.2)
+
+### 유형
+
+* Binary Search(二分查找)
+* Sorted Range(有序范围)
+* Search Boundary(边界查找)
+
+### 풀이
+
+* `left`, `right`로 정답이 존재할 수 있는 탐색 범위를 설정.
+* `middle`의 값에 대해 `guess()`의 결과를 확인하여 탐색 범위를 절반으로 줄인다.
+* `guess(middle) == 0`이면 정답이므로 해당 값을 반환한다.
+* `guess(middle) == -1`이면 정답이 `middle`보다 작으므로 `right`를 왼쪽으로 이동한다.
+* `guess(middle) == 1`이면 정답이 `middle`보다 크므로 `left`를 오른쪽으로 이동한다.
+
+### 개선점
+
+* `guess(middle)`은 한 번만 호출하고 결과를 변수에 저장한다.
+
+```cpp
+int result = guess(middle);
+```
+
+* while (left <= right)
+
+### 배운 점
+
+* `35`번처럼 값 자체가 아니라 삽입 위치나 경계(Boundary / 边界)를 찾는 형태로도 확장할 수 있다.
+* `35`번은 `left`를 반환하여 삽입 위치를 찾지만, `374`번은 `guess()`를 통해 **정확한 정답을 찾으면 즉시 반환**한다.
+* 시간복잡도(Time Complexity / 时间复杂度): `O(log n)`
+* 공간복잡도(Space Complexity / 空间复杂度): `O(1)`
