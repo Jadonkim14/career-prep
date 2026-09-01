@@ -235,7 +235,7 @@ outStack = {2}
 * 외부에서 필요한 동작은 `public`, 내부 구현에만 필요한 데이터와 보조 함수는 `private`으로 숨길 수 있다 → Encapsulation(封装).
 
 
-## **0704. Binary Search (26.8.27)**
+## 0704. Binary Search (26.8.27)
 
 ### 유형
 
@@ -340,3 +340,53 @@ nums[middle] > target
 * 실무에서도 정렬된 대량 데이터의 검색뿐 아니라 **특정 조건을 처음 만족하는 위치나 최소/최대 가능한 값을 효율적으로 찾는 문제**로 Binary Search 사고방식이 활용될 수 있다.
 
 > **핵심:** `정렬된 탐색 공간 + 비교 결과로 절반을 확실히 제거할 수 있음 → Binary Search를 고려한다.`
+
+
+**## 0035. Search Insert Position (26.9.1)**
+
+**### 유형**
+
+* Binary Search(二分查找)
+* Sorted Array(有序数组)
+* Insert Position(插入位置)
+
+**### 처음 풀이**
+
+* `left`, `right`로 탐색 범위를 설정.
+* `middle`의 값과 `target`을 비교하여 탐색 범위를 절반으로 줄인다.
+* `target`을 찾으면 해당 인덱스를 반환.
+* 찾지 못하면 `left`가 target이 들어갈 위치이므로 `left`를 반환한다.
+
+```cpp
+if (nums[middle] < target)
+    left = middle + 1;
+else
+    right = middle - 1;
+
+return left;
+```
+
+**### 개선점**
+
+* `middle`은 Integer Overflow(整数溢出)를 피하기 위해 다음 형태를 사용한다.
+
+```cpp
+int middle = left + (right - left) / 2;
+```
+
+* 탐색 종료 시 `left > right`가 되고, `left`는 **target보다 작은 값과 큰 값 사이의 경계**가 된다.
+
+```text
+[ target보다 작은 값 ][ target보다 큰 값 ]
+                     ↑
+                    left
+```
+
+**### 배운 점**
+
+* Binary Search는 정확한 값뿐 아니라 **삽입 위치 / 경계(Boundary / 边界)**를 찾는 데도 사용할 수 있다.
+* `704`는 target을 찾지 못하면 `-1`을 반환하지만, `35`는 찾지 못해도 `left`를 반환한다.
+* 시간복잡도(Time Complexity / 时间复杂度): `O(log n)`
+* 공간복잡도(Space Complexity / 空间复杂度): `O(1)`
+
+> **핵심:** `nums[middle] < target`이면 `left`를 오른쪽으로, `nums[middle] > target`이면 `right`를 왼쪽으로 이동시키면, 탐색 종료 후 `left`가 target의 삽입 위치가 된다.
