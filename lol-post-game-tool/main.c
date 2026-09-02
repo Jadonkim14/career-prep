@@ -10,11 +10,20 @@ int main(int argc, char *argv[]){
     }
 
     int count = 0;
-    Event *events;
+    struct event *events;
     MatchAnalysis result;
 
     events = load_events(argv[1], &count);
     if(events == NULL) return -1;
+
+    FILE *fp = fopen("match.bin", "wb");
+    if(fp == NULL) return -1;
+
+    for(int i = 0; i < count; i++){
+        serialize_event(&events[i], fp);
+    }
+    
+    fclose(fp);
 
     result = analyze_events(events, count);
     if (result.moments == NULL) {

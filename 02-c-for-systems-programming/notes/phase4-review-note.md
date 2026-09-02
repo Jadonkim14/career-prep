@@ -1895,3 +1895,327 @@ double diff = difftime(time_b, time_a);
 > **`strftime()` → 원하는 형식의 문자열**
 > **`timespec` → 초 + 나노초**
 > **`difftime()` → 두 시간의 차이** 
+
+
+## Ch.39 — Multithreading（多线程）(26.09.02)
+
+### 핵심 개념
+
+* **Thread（线程）**
+
+  * 하나의 프로그램 안에서 독립적으로 실행되는 작업 단위.
+  * 여러 스레드는 실행 순서가 보장되지 않는다.
+
+* **`thrd_create()`**
+
+  * 새로운 스레드를 생성하고 지정한 함수를 실행한다.
+
+  ```c
+  int worker(void *arg)
+  ```
+
+  * 스레드 시작 함수는 **`void *`를 받고 `int`를 반환**하는 형태.
+  * 반환값은 `thrd_join()`으로 받을 수 있다.
+
+* **`thrd_join()`**
+
+  * 해당 스레드가 **종료될 때까지 기다림**.
+  * 스레드의 `return` 값도 받을 수 있다.
+
+  ```c
+  int result;
+  thrd_join(t, &result);
+  ```
+
+* **Race Condition（竞态条件）**
+
+  * 여러 스레드가 **공유 데이터에 동시에 접근**하면서 실행 순서에 따라 결과가 달라지는 문제.
+  * 특히 `count++`처럼 읽기 → 계산 → 쓰기가 필요한 작업에서 발생할 수 있다.
+
+* **Mutex（互斥锁）**
+
+  * 공유 데이터를 한 번에 하나의 스레드만 접근하도록 보호.
+
+  ```c
+  mtx_lock(&mutex);
+
+  count++;
+
+  mtx_unlock(&mutex);
+  ```
+
+  * `lock`과 `unlock` 사이가 **Critical Section（临界区, 임계 영역）**.
+
+* **Condition Variable（条件变量）**
+
+  * 어떤 조건이 만족될 때까지 스레드를 **대기시켰다가 깨우는 데 사용**.
+
+  ```c
+  cnd_wait(&cond, &mutex);
+  ```
+
+  * `cnd_wait()`는:
+
+    1. mutex를 풀고
+    2. 스레드를 대기시킨 뒤
+    3. 깨어나면 mutex를 다시 획득한다.
+
+* **`while + cnd_wait()`**
+
+  ```c
+  while (!ready)
+      cnd_wait(&cond, &mutex);
+  ```
+
+  * **Spurious Wakeup（허위 기상）** 때문에 `if`가 아니라 `while`을 사용.
+  * 깨어났다고 해서 조건이 만족됐다는 보장은 없다.
+  * 따라서 깨어날 때마다 조건을 다시 확인한다.
+
+* **Thread Local（线程局部）**
+
+  ```c
+  _Thread_local int x;
+  ```
+
+  * 스레드마다 독립적인 `x`를 갖는다.
+  * 일반적인 지역 변수도 각 스레드의 호출 스택에 존재하므로 기본적으로 스레드별로 독립적이다.
+
+### 기억할 것
+
+> **Thread = 독립적인 실행 단위**
+
+> **Race Condition = 공유 데이터 + 동시 접근 + 실행 순서 문제**
+
+> **Mutex = 공유 데이터 보호**
+
+> **Critical Section = 보호해야 하는 코드 영역**
+
+> **Condition Variable = 조건이 될 때까지 대기**
+
+> **`cnd_wait()` = mutex 해제 → 대기 → 깨어남 → mutex 재획득**
+
+> **Condition Variable은 `while`로 조건을 다시 확인한다.**
+
+
+## Ch.40 — Atomics (26.09.02)
+
+### 핵심 개념
+
+* **Atomic(원자적 연산 / 原子操作)**
+
+  * 읽기·쓰기를 다른 스레드가 중간 상태로 관찰하지 않도록 **하나의 연산처럼 처리**.
+  * `atomic_int` 등을 사용.
+
+* **Atomic ≠ 모든 동시성 문제 해결**
+
+  * 단순 연산은 Atomic으로 처리할 수 있음.
+  * `if (x == 0) x = 100;`처럼 여러 연산으로 이루어진 논리는 여전히 **Race Condition(竞态条件)**이 발생할 수 있음.
+
+* **Atomic RMW(Read-Modify-Write)**
+
+  * 읽기 → 수정 → 쓰기를 하나의 Atomic 연산으로 처리.
+  * `++`, `--`, `+=`, `-=` 등의 연산이 해당.
+
+### Synchronization
+
+* 여러 스레드에서 공유 데이터를 사용할 때는 **Atomicity(原子性)**뿐 아니라 **Synchronization(同步)**도 중요.
+* 컴파일러/CPU의 재배치와 메모리 가시성 때문에 소스 코드의 순서대로 다른 스레드가 보지 않을 수 있음.
+
+### Acquire / Release
+
+```text
+Thread A
+data = 100;
+ready = 1;       ← Release
+                  ↓
+               동기화
+                  ↓
+ready == 1       ← Acquire
+data 읽기
+```
+
+* **Release(释放)** → 이전에 수행한 작업을 다른 스레드가 볼 수 있도록 공개.
+* **Acquire(获取)** → 다른 스레드가 Release한 이전 작업을 볼 수 있도록 함.
+
+### Sequential Consistency
+
+* **Sequential Consistency(순차적 일관성 / 顺序一致性)**
+* Atomic 연산을 모든 스레드가 **일관된 하나의 순서**로 보는 메모리 순서.
+* `memory_order_seq_cst`가 기본값.
+* 가장 강하고 이해하기 쉬운 메모리 순서.
+
+### Mutex와 비교
+
+```text
+Atomic
+→ 개별 값의 Atomic 연산
+→ 카운터, 플래그 등
+
+Mutex
+→ 여러 작업으로 이루어진 Critical Section(临界区) 보호
+→ 복잡한 공유 데이터 처리
+```
+
+### 실무 연결
+
+```text
+C11 Atomic
+    ↓
+Multithreading
+    ↓
+Race Condition / Synchronization
+    ↓
+Linux System Programming
+    ↓
+Linux Kernel
+    ↓
+Driver / BSP의 Concurrency
+```
+
+### 기억할 것
+
+> **Atomic = 하나의 연산처럼 처리**
+
+> **Atomic이라고 여러 연산으로 된 논리까지 안전해지는 것은 아니다.**
+
+> **Atomicity = 중간 상태 방지 / Synchronization = 스레드 간 작업 전달**
+
+> **Release → 공개, Acquire → 확인**
+
+> **Atomic은 단순 공유 상태, Mutex는 여러 작업을 묶어서 보호**
+
+
+# Ch.41 — 함수 지정자와 정렬 (26.09.02)
+
+### 1. `noreturn` / `_Noreturn`
+
+함수가 **호출자에게 반환하지 않는다**는 것을 컴파일러에게 알리는 지정자.
+
+```c
+#include <stdnoreturn.h>
+
+noreturn void foo(void)
+{
+    exit(1);
+}
+```
+
+* 컴파일러 최적화에 활용될 수 있음
+* 다른 개발자에게 함수가 반환하지 않는다는 의도를 전달
+* 실제로 반환하면 **Undefined Behavior**
+* 실무에서 직접 사용할 일은 많지 않음
+* `exit()`, `abort()` 같은 함수에서 볼 수 있음
+
+> **`noreturn` = 반환값이 없다는 뜻이 아니라, 호출자에게 돌아오지 않는다는 뜻**
+
+---
+
+### 2. Alignment (정렬 / 对齐)
+
+객체를 **어떤 주소 경계에 맞춰 저장해야 하는지**에 대한 개념.
+
+예:
+
+```c
+char alignas(8) c;
+```
+
+→ `c`를 **8바이트 경계에 맞춰 정렬**하도록 지정.
+
+저수준 코드에서 중요하다.
+
+* Memory Allocator
+* Embedded
+* Hardware
+* Atomic
+* SIMD 등
+
+---
+
+### 3. `alignas` / `_Alignas`
+
+변수의 **정렬을 지정**한다.
+
+```c
+char alignas(8) c;
+```
+
+또는:
+
+```c
+char alignas(int) c;
+```
+
+`<stdalign.h>`의 `alignas`를 사용할 수 있다.
+
+---
+
+### 4. `alignof` / `_Alignof`
+
+특정 타입의 **Alignment 요구사항을 확인**한다.
+
+```c
+alignof(int)
+```
+
+예를 들어 시스템에 따라:
+
+```text
+char  → 1
+int   → 4
+double → 8
+```
+
+등이 될 수 있다.
+
+값은 **시스템마다 다를 수 있다.**
+
+---
+
+### 5. `max_align_t`
+
+시스템에서 일반적인 타입들이 사용하는 **최대 Alignment**를 나타내는 타입.
+
+```c
+char alignas(max_align_t) c;
+```
+
+→ 시스템의 최대 정렬 기준에 맞춰 `c`를 정렬하도록 지정.
+
+---
+
+### 6. `memalignment()` — C23
+
+포인터가 가리키는 **실제 메모리의 Alignment를 확인**한다.
+
+특히 `void *`처럼 구체적인 타입을 모르는 포인터를 사용할 때 의미가 있다.
+
+```c
+void foo(void *p)
+{
+    if (memalignment(p) >= alignof(atomic int)) {
+        atomic int *i = p;
+        do_things(i);
+    }
+}
+```
+
+→ `p`가 `atomic int`로 사용하기에 충분히 정렬되어 있는지 확인.
+
+저수준 코드가 아니라면 사용할 일이 거의 없다.
+
+---
+
+## 기억할 것
+
+> **`noreturn` → 호출자에게 반환하지 않음**
+
+> **`alignas` → Alignment 지정**
+
+> **`alignof` → Alignment 확인**
+
+> **`max_align_t` → 시스템의 최대 Alignment**
+
+> **`memalignment()` → 포인터가 가리키는 메모리의 Alignment 확인**
+
+> **Alignment는 저수준 시스템/임베디드에서 중요하다.**

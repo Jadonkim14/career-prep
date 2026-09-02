@@ -3,7 +3,7 @@
 
 #include "analysis.h"
 
-MatchAnalysis analyze_events(const Event *events, int count)
+MatchAnalysis analyze_events(const struct event *events, int count)
 {
     MatchAnalysis result;
 

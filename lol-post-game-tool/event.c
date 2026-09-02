@@ -3,12 +3,12 @@
 
 #include "event.h"
 
-Event *load_events(const char *filename, int *count)
+struct event *load_events(const char *filename, int *count)
 {
     char s[1024];
     FILE *fp;
-    Event e;
-    Event *events = NULL;
+    struct event e;
+    struct event *events = NULL;
     int capacity = 4;
 
     *count = 0;
@@ -19,7 +19,7 @@ Event *load_events(const char *filename, int *count)
         return NULL;
     } 
 
-    events = malloc(sizeof(Event) * capacity);
+    events = malloc(sizeof(struct event) * capacity);
     if (events == NULL) {
         fclose(fp);
         return NULL;
@@ -28,7 +28,7 @@ Event *load_events(const char *filename, int *count)
     while(fgets(s, sizeof s, fp) != NULL){
         if(*count == capacity){
             int new_capacity = capacity * 2;
-            Event* new_events = realloc(events, sizeof(Event) 
+            struct event* new_events = realloc(events, sizeof(struct event) 
             * new_capacity);
 
             if(new_events == NULL){
@@ -49,22 +49,22 @@ Event *load_events(const char *filename, int *count)
         }
         i++;
 
-        int j = 0;
-        while(s[i] != ' '){
-            e.team[j] = s[i];
-            i++;
-            j++;
-        }
-        e.team[j] = '\0';
+        if(s[i] == 'B') e.team = BLUE;
+        else e.team = RED;
+        while(s[i] != ' ') i++;
         i++;
 
-        int k = 0;
-        while(s[i] != '\n' && s[i] != '\0'){
-            e.event[k] = s[i];
-            i++;
-            k++;
-        }
-        e.event[k] = '\0';
+        if(s[i] == 'K') e.type = KILL;
+        else if(s[i] == 'D' && s[i+1] == 'E') e.type = DEATH;
+        else if(s[i] == 'D' && s[i+1] == 'R') e.type = DRAGON;
+        else if(s[i] == 'B') e.type = BARON;
+        else e.type = TOWER;
+
+        if(e.type == KILL) e.flags = COMBAT;
+        else if(e.type == DEATH) e.flags = COMBAT;
+        else if(e.type == DRAGON) e.flags = (OBJECTIVE | MAJOR);
+        else if(e.type == BARON) e.flags = (OBJECTIVE | MAJOR);
+        else e.flags = OBJECTIVE;
 
         events[*count] = e;
         (*count)++;
@@ -74,7 +74,38 @@ Event *load_events(const char *filename, int *count)
     return events;
 }
 
-void free_events(Event *events)
+bool serialize_event(const struct event *event, FILE *fp)
+{
+    // This system is Little-Endian
+    // Write time
+    uint8_t low, high;
+    low = (event->time & 0x00FF);
+    high = (event->time & 0xFF00) >> 8;
+    if(!fwrite(&low, 1, 1, fp) 
+        || !fwrite(&high, 1, 1, fp)) 
+        return false;
+
+    // Write type
+    uint8_t type = (uint8_t)event->type;
+    if(!fwrite(&type, 1, 1, fp))
+        return false;
+
+    // Write team
+    uint8_t team = (uint8_t)event->team;
+    if(!fwrite(&team, 1, 1, fp))
+        return false;
+
+    // Write flags
+    low = (event->flags & 0x00FF);
+    high = (event->flags & 0xFF00) >> 8;
+    if(!fwrite(&low, 1, 1, fp) 
+        || !fwrite(&high, 1, 1, fp)) 
+        return false;
+
+    return true;
+}
+
+void free_events(struct event *events)
 {
     free(events);
 }
