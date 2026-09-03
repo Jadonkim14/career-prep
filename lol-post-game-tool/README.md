@@ -46,4 +46,4 @@ gcc -Wall -Wextra -pedantic -o event_engine *.c
 * V0.6 — Natural-Language Queries
 * V1.0 — Interactive Post-Game Review
 
-Further development is paused because LLM forcing newly learned concepts into the project was not an effective learning approach.
+Further development is paused because LLM forcing newly learned concepts into the project was not an effective learning approach😮‍💨
