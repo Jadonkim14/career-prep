@@ -424,3 +424,41 @@ int result = guess(middle);
 * `35`번은 `left`를 반환하여 삽입 위치를 찾지만, `374`번은 `guess()`를 통해 **정확한 정답을 찾으면 즉시 반환**한다.
 * 시간복잡도(Time Complexity / 时间复杂度): `O(log n)`
 * 공간복잡도(Space Complexity / 空间复杂度): `O(1)`
+
+
+좋아. **첫 번째 풀이의 방식(`mid`와 `mid + 1`을 비교해서 정답을 바로 반환)**으로 바꾸면 이렇게 정리하면 돼.
+
+## 0069. Sqrt(x) (26.9.3)
+
+**### 유형**
+
+* Binary Search(二分查找)
+* Sorted Range(有序范围)
+* Search Boundary(边界查找)
+
+**### 풀이**
+
+* `left`, `right`로 정답이 존재할 수 있는 탐색 범위를 설정.
+* `middle`의 제곱과 `x`를 비교하여 탐색 범위를 절반으로 줄인다.
+* `middle² <= x`이고 `(middle + 1)² > x`이면 `middle`이 정답이므로 반환한다.
+* `middle² > x`이면 정답이 `middle`보다 작으므로 `right`를 왼쪽으로 이동한다.
+* `(middle + 1)² <= x`이면 정답이 더 크므로 `left`를 오른쪽으로 이동한다.
+* middle 제곱할 때 오버플로우 발생
+
+**### 개선점**
+
+* (long long) middle² <= x 으로 오버플로우를 피할 수 있다.
+* 혹은 `middle <= x / middle` 형태로 비교할 수 있다.
+* 단, 나눗셈을 사용하는 경우 `middle == 0`에서 Division by Zero(除零)가 발생할 수 있으므로 주의한다.
+
+**### 배운 점**
+
+* 값 자체가 아니라 **조건을 만족하는 경계값**을 찾는 형태로도 Binary Search를 사용할 수 있다.
+* `374`번은 `guess()`를 통해 정확한 정답을 찾으면 즉시 반환한다.
+* `69`번은 `middle² <= x < (middle + 1)²`라는 조건을 만족하는 경계값을 찾는다.
+* 곱셈에서는 Integer Overflow(整数溢出), 나눗셈에서는 Division by Zero(除零)를 주의해야 한다.
+* int ans = exp(0.5 * log(x));
+  return ((long long)(ans + 1) * (ans + 1) <= x ? ans + 1 : ans);
+  이 방법으로 풀 시 부동소수점 계산 후 정수값을 사용할 때는 경계 후보를 정확한 연산으로 재검증 해야 한다.
+* 시간복잡도(Time Complexity / 时间复杂度): `O(log n)`
+* 공간복잡도(Space Complexity / 空间复杂度): `O(1)`
