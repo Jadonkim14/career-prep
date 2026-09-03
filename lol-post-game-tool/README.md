@@ -2,79 +2,48 @@
 
 ## Overview
 
-LoL Interactive Post-Game Review Tool is a project for analyzing League of Legends matches and helping players quickly review the moments that influenced the outcome of a game.
+A C-based CLI tool for analyzing League of Legends match events and identifying critical moments.
 
-The long-term goal is to build an interactive post-game review system that can detect critical moments, explain win/loss factors, connect important events to replay timestamps, and support natural-language queries.
-
-The current version, **V0.1**, implements a C-based CLI event engine that reads simulated match events from a file, stores them dynamically, calculates basic statistics, and detects simple critical moments.
+The project is currently **paused**. It may be resumed later for fun.
 
 ## Current Features
 
-- Parse match events from a text file
-- Store events using dynamic memory allocation
-- Calculate basic team statistics
-- Query events within a specific time range
-- Detect simple Critical Moments
-- Accept match files through command-line arguments
+* Parse match events from a text file
+* Dynamic event storage
+* Basic match statistics
+* Time-range event queries
+* Critical Moment detection
+* Binary event serialization/deserialization
+* Enum, fixed-width integer, bit flag, and function pointer usage
 
 ## Project Structure
 
 ```text
 lol-post-game-tool/
-├── lolreview.c
+
+├── main.c
+├── event.c / event.h
+├── analysis.c / analysis.h
+├── output.c / output.h
 ├── match.txt
 └── README.md
-````
+```
 
 ## Build & Run
 
-Compile:
-
 ```bash
-gcc -Wall -Wextra -pedantic -o lolreview lolreview.c
+gcc -Wall -Wextra -pedantic -o event_engine *.c
+./event_engine match.txt
 ```
 
-Run:
+## Status
 
-```bash
-./lolreview match.txt
-```
+* V0.1 — C-based Event Engine ✅
+* V0.2 — Improved Match Analysis ⏸️ Paused
+* V0.3 — Real Match Data Integration
+* V0.4 — Replay Control
+* V0.5 — Post-Game Review UI
+* V0.6 — Natural-Language Queries
+* V1.0 — Interactive Post-Game Review
 
-If no match file is provided:
-
-```text
-Usage: ./lolreview <match_file>
-```
-
-If the file cannot be opened:
-
-```text
-Failed to open file: abc.txt
-```
-
-## Example Output
-
-```text
-=== Match Summary ===
-Kills: 3 - 2
-Dragons: 1 - 2
-
-=== Events 25:00 ~ 26:00 ===
-25:11 RED DEATH
-25:20 RED DEATH
-25:32 BLUE BARON
-
-Critical Moment #1
-25:11 ~ 25:32
-2 Deaths -> BARON Lost
-```
-
-## Roadmap
-
-V0.1 — C-based Event Engine
-V0.2 — Improved Match Analysis
-V0.3 — Real Match Data Integration
-V0.4 — Replay Control
-V0.5 — Post-Game Review UI
-V0.6 — Natural-Language Queries
-V1.0 — Interactive Post-Game Review
+Further development is paused because LLM forcing newly learned concepts into the project was not an effective learning approach.

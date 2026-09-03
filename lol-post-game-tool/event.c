@@ -144,6 +144,54 @@ bool serialize_event(const struct event *event, FILE *fp)
     return true;
 }
 
+enum read_status deserialize_event(struct event *event, FILE *fp)
+{
+    // This system is Little-Endian
+    // Read time
+    uint8_t low, high;
+    size_t low_cnt, high_cnt;
+
+    low_cnt = fread(&low, 1, 1, fp);
+    if(!low_cnt){
+        if(feof(fp)) return READ_EOF;
+        return READ_ERROR;
+    }
+
+    high_cnt = fread(&high, 1, 1, fp);
+    if(!high_cnt){
+        return READ_ERROR;
+    }
+
+    event->time = (uint16_t)low + ((uint16_t)high << 8);
+
+    // Read type
+    uint8_t type;
+    size_t type_cnt = fread(&type, 1, 1, fp);
+    if(!type_cnt){
+        return READ_ERROR;
+    }
+    event->type = (enum event_type)type;
+
+    // Read team
+    uint8_t team;
+    size_t team_cnt = fread(&team, 1, 1, fp);
+    if(!team_cnt){
+        return READ_ERROR;
+    }
+    event->team = (enum team)team;
+
+    // Read flags
+    low_cnt = fread(&low, 1, 1, fp);
+    if(!low_cnt) return READ_ERROR;
+    
+    high_cnt = fread(&high, 1, 1, fp);
+    if(!high_cnt) return READ_ERROR;
+
+    event->flags = (uint16_t)low + ((uint16_t)high << 8);
+
+    return READ_SUCCESS;
+}
+
 void free_events(struct event *events)
 {
     free(events);

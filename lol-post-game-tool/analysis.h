@@ -3,6 +3,8 @@
 
 #include "event.h"
 
+#define ANALYZER_CNT 2
+
 typedef struct {
     int start_time;
     int end_time;
@@ -19,6 +21,9 @@ typedef struct {
     int critical_count;
     int critical_capacity;
 } MatchAnalysis;
+
+void kill_analyzer(const struct event *ev, MatchAnalysis *ma);
+void dragon_analyzer(const struct event *ev, MatchAnalysis *ma);
 
 MatchAnalysis analyze_events(const struct event *events, int count);
 

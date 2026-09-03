@@ -3,6 +3,24 @@
 
 #include "analysis.h"
 
+void kill_analyzer(const struct event *ev, MatchAnalysis *ma)
+{
+    if (ev->type == KILL && ev->team == BLUE)
+        ma->blue_kill_count++;
+    
+    else if (ev->type == KILL && ev->team == RED)
+        ma->red_kill_count++;
+}
+
+void dragon_analyzer(const struct event *ev, MatchAnalysis *ma)
+{
+    if (ev->type == DRAGON && ev->team == BLUE)
+        ma->blue_dragon_count++;
+    
+    else if (ev->type == DRAGON && ev->team == RED)
+        ma->red_dragon_count++;
+}
+
 MatchAnalysis analyze_events(const struct event *events, int count)
 {
     MatchAnalysis result;
@@ -18,28 +36,29 @@ MatchAnalysis analyze_events(const struct event *events, int count)
         sizeof(CriticalMoment) * result.critical_capacity
     );
 
+    printf("analyze_events reached\n");
+
     if (result.moments == NULL) {
+        printf("malloc failed\n");
         result.critical_capacity = 0;
         return result;
     }
 
     // Calculate basic statistics
-    for(int i = 0; i < count; i++){
-        if(events[i].type == KILL){
-            if(events[i].team == BLUE)
-                result.blue_kill_count++;
-            else if(events[i].team == RED)
-                result.red_kill_count++;
-        }
+    void (*analyzers[ANALYZER_CNT])(const struct event *, MatchAnalysis *) = {
+            kill_analyzer,
+            dragon_analyzer
+        };
 
-        else if(events[i].type == DRAGON){
-            if(events[i].team == BLUE)
-                result.blue_dragon_count++;
-            else if(events[i].team == RED)
-                result.red_dragon_count++;
+    for(int i = 0; i < count; i++){
+        for(int j = 0; j < ANALYZER_CNT; j++){
+            analyzers[j](&events[i], &result);
         }
     }
 
+    printf("analyzers done\n");
+
+    printf("critical analysis start\n");
     // Detect critical moments
     for (int i = 0; i < count - 2; i++) {
         if (events[i].type == DEATH &&
@@ -81,6 +100,11 @@ MatchAnalysis analyze_events(const struct event *events, int count)
             result.critical_count++;
         }
     }
+
+    printf("critical analysis done\n");
+
+    printf("moments = %p\n", (void *)result.moments);
+    
     return result;
 }
 

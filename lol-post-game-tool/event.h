@@ -24,6 +24,12 @@ enum event_flag {
     MAJOR = 4
 };
 
+enum read_status {
+    READ_SUCCESS,
+    READ_EOF,
+    READ_ERROR
+};
+
 struct event {
     uint16_t time;
     enum event_type type;
@@ -37,6 +43,7 @@ const char *team_to_string(enum team team);
 struct event *load_events(const char *filename, int *count);
 
 bool serialize_event(const struct event *event, FILE *fp);
+enum read_status deserialize_event(struct event *event, FILE *fp);
 
 void free_events(struct event *events);
 
