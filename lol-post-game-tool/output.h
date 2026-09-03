@@ -6,7 +6,7 @@
 void print_summary(const MatchAnalysis *result);
 
 void print_events_in_range(
-    const Event *events,
+    const struct event *events,
     int count,
     int start_time,
     int end_time

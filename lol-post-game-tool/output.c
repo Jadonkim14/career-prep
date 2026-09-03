@@ -9,7 +9,7 @@ void print_summary(const MatchAnalysis *result)
     printf("Dragons: %d - %d\n", result->blue_dragon_count, result->red_dragon_count);
 }
 
-void print_events_in_range(const Event *events, int count,
+void print_events_in_range(const struct event *events, int count,
     int start_time, int end_time
 ){
     printf("\n=== Events %d:%02d ~ %d:%02d ===\n", 
@@ -20,7 +20,7 @@ void print_events_in_range(const Event *events, int count,
         if (events[i].time >= start_time && events[i].time <= end_time) {
             printf("%d:%02d %s %s\n", 
                 events[i].time / 60, events[i].time % 60, 
-                events[i].team, events[i].event);
+                team_to_string(events[i].team), event_type_to_string(events[i].type));
         }
 
     }

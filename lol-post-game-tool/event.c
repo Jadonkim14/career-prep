@@ -3,6 +3,45 @@
 
 #include "event.h"
 
+const char *event_type_to_string(enum event_type type)
+{
+    switch (type)
+    {
+    case KILL:
+        return "KILL";
+    
+    case DEATH:
+        return "DEATH";
+    
+    case DRAGON:
+        return "DRAGON";
+    
+    case BARON:
+        return "BARON";
+    
+    case TOWER:
+        return "TOWER";
+    
+    default:
+        return "UNKNOWN";
+    }
+} 
+
+const char *team_to_string(enum team team) 
+{
+    switch (team)
+    {
+    case BLUE:
+        return "BLUE";
+    
+    case RED:
+        return "RED";
+
+    default:
+        return "UNKNOWN";
+    }
+}
+
 struct event *load_events(const char *filename, int *count)
 {
     char s[1024];

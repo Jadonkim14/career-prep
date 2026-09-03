@@ -20,7 +20,8 @@ typedef struct {
     int critical_capacity;
 } MatchAnalysis;
 
-MatchAnalysis analyze_events(const Event *events, int count);
+MatchAnalysis analyze_events(const struct event *events, int count);
+
 void free_analysis(MatchAnalysis *result);
 
 #endif
