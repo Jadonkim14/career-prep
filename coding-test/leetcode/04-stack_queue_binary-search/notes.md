@@ -425,9 +425,6 @@ int result = guess(middle);
 * 시간복잡도(Time Complexity / 时间复杂度): `O(log n)`
 * 공간복잡도(Space Complexity / 空间复杂度): `O(1)`
 
-
-좋아. **첫 번째 풀이의 방식(`mid`와 `mid + 1`을 비교해서 정답을 바로 반환)**으로 바꾸면 이렇게 정리하면 돼.
-
 ## 0069. Sqrt(x) (26.9.3)
 
 **### 유형**
