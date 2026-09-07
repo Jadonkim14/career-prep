@@ -1,4 +1,4 @@
-# Chapter 2 — Data Representation
+# Chapter 2. Data Representation
 
 ## 2.1 Bits and Bytes ~ 2.3 Integers
 
