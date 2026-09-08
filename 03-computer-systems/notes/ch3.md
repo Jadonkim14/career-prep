@@ -1,6 +1,6 @@
 # Chapter 3. Machine-Level Programming
 
-## 3.1 Machine Prog: Basics
+## 3.1 Machine Prog: Basics (26.09.07)
 
 ### 1. C → Machine Code
 
@@ -166,3 +166,176 @@ x86-64에서 첫 번째 인자 → %rdi, 두 번째 인자 → %rsi
 > C 코드가 실제 CPU에서 실행되기까지는 **C → Assembly → Machine Code**로 변환되며, CPU는 **Register와 Memory를 이용해 instruction을 실행한다.**
 
 > 특히 Assembly에서는 **값(value), 주소(address), Register, Memory의 관계**를 구분해서 이해하는 것이 핵심이다.
+
+
+## 3.2 Machine Prog: Control (26.09.08)
+
+### 1. Address Computation
+
+```asm
+D(Rb, Ri, S)
+```
+
+→ `D + Rb + Ri × S`
+
+* `D`: Displacement(偏移量)
+* `Rb`: Base Register(基址寄存器)
+* `Ri`: Index Register(索引寄存器)
+* `S`: Scale(比例因子), `1, 2, 4, 8`
+
+`leal`은 메모리를 읽지 않고 주소 계산식을 계산한다.
+
+### 2. Arithmetic
+
+* `add`, `sub`, `imul`: 산술 연산
+* `sal/shl`: 왼쪽 시프트
+* `sar`: 산술 오른쪽 시프트
+* `shr`: 논리 오른쪽 시프트
+* `and`, `or`, `xor`: 논리 연산
+
+컴파일러는 C 코드의 구조를 그대로 유지하지 않고 더 효율적인 instruction으로 최적화할 수 있다.
+
+### 3. Condition Codes
+
+산술 연산 결과에 따라 CPU가 설정하는 Flag:
+
+* `CF`: Carry → unsigned
+* `ZF`: 결과가 0
+* `SF`: 결과의 sign
+* `OF`: signed overflow
+
+### 4. `cmp` / `test`
+
+```asm
+cmp
+```
+
+→ `Src1 - Src2`를 계산한 것처럼 Flag 설정. 결과는 저장하지 않음.
+
+```asm
+test
+```
+
+→ `Src1 & Src2`를 계산한 것처럼 Flag 설정. 결과는 저장하지 않음.
+
+### 5. `setcc`
+
+Condition Code에 따라 `0` 또는 `1`을 저장.
+
+* `sete`: equal
+* `setne`: not equal
+* `setg/setge`: signed `>/<`
+* `setl/setle`: signed `</<=`
+* `seta`: unsigned `>`
+* `setb`: unsigned `<`
+
+### 6. Signed vs Unsigned
+
+같은 비트 패턴도 signed와 unsigned에 따라 값이 다르게 해석된다.
+
+* `jg`: signed greater
+* `ja`: unsigned greater
+
+Signed 비교에서는 `SF ^ OF`를 고려하고, unsigned 비교에서는 `CF`를 사용한다.
+
+### 7. Branch / CMOV
+
+**Conditional Branch(条件分支)**
+→ 조건에 따라 **실행 위치**를 변경.
+
+**Conditional Move(条件移动)**
+→ 조건에 따라 **값**을 선택.
+
+### 8. Loops
+
+C의 반복문은 결국 **조건 검사 + Jump**로 구현된다.
+
+* `do-while`: body 실행 후 조건 검사
+* `while`: 조건 검사 후 body 실행
+* `for`: `init → condition → body → update → condition`
+
+`for`는 `while` + `update` 형태로 이해할 수 있다.
+
+### 질문·헷갈린 내용
+
+**CF vs OF**
+
+### CF vs OF
+
+**`CF` — Carry Flag(캐리 플래그)**
+
+Unsigned(无符号) 연산에서 **표현 범위를 넘어 carry가 발생했는지** 나타낸다.
+
+```text
+8-bit unsigned: 0 ~ 255
+
+255 + 1
+
+  11111111
++ 00000001
+-----------
+1 00000000
+↑
+carry
+```
+
+8-bit 결과는 `00000000`이고, 최상위 비트 밖으로 carry가 발생했으므로:
+
+```text
+CF = 1
+```
+
+→ **Unsigned 범위를 넘었는지 판단할 때 사용**
+
+---
+
+**`OF` — Overflow Flag(오버플로우 플래그)**
+
+Signed(有符号) 연산에서 **표현 범위를 넘어 overflow가 발생했는지** 나타낸다.
+
+```text
+8-bit signed: -128 ~ 127
+
+127 + 1
+
+  01111111
++ 00000001
+-----------
+  10000000
+```
+
+`10000000`은 signed에서 `-128`이므로:
+
+```text
+127 + 1 → -128
+OF = 1
+```
+
+→ **Signed 범위를 넘었는지 판단할 때 사용**
+
+---
+
+### 핵심
+
+```text
+CF → Carry → Unsigned
+OF → Overflow → Signed
+```
+
+같은 연산에서도 두 Flag의 의미는 다르다.
+
+```text
+127 + 1  → CF = 0, OF = 1
+255 + 1  → CF = 1, OF = 0
+```
+
+따라서 `CF`와 `OF`를 구분해야 **signed 비교(`jg`)와 unsigned 비교(`ja`)**를 이해할 수 있다.
+
+### 핵심 정리
+
+* `cmp/test` → Condition Code(条件码) 설정
+* `CF/ZF/SF/OF` → 조건 판단에 사용
+* `Branch` → 실행 흐름 변경
+* `CMOV` → 값 선택
+* `Loops` → 조건 검사와 Jump의 조합
+* 컴파일러는 의미를 유지하면서 더 효율적인 Assembly로 최적화한다.
