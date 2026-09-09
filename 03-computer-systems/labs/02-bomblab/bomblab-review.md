@@ -182,3 +182,121 @@ jmp *0x402470(,%rax,8)
 * 첫 번째 입력값에 따라 `%eax`에 미리 정해진 값이 들어간다. `0` → `207`... `7` → `327`
 * `cmp 0xc(%rsp), %eax` → 두 번째 입력값과 case에서 설정된 `%eax`를 비교한다.
 * `je` → 두 값이 같으면 Phase 3 통과한다.
+
+
+## Phase 4
+
+```text
+Dump of assembler code for function phase_4:
+   0x000000000040100c <+0>:     sub    $0x18,%rsp
+   0x0000000000401010 <+4>:     lea    0xc(%rsp),%rcx
+   0x0000000000401015 <+9>:     lea    0x8(%rsp),%rdx
+   0x000000000040101a <+14>:    mov    $0x4025cf,%esi // "%d %d"
+   0x000000000040101f <+19>:    mov    $0x0,%eax
+   0x0000000000401024 <+24>:    call   0x400bf0 <__isoc99_sscanf@plt>
+   0x0000000000401029 <+29>:    cmp    $0x2,%eax // input num == 2?
+   0x000000000040102c <+32>:    jne    0x401035 <phase_4+41>
+   0x000000000040102e <+34>:    cmpl   $0xe,0x8(%rsp)
+   0x0000000000401033 <+39>:    jbe    0x40103a <phase_4+46> // 0x8(%rsp) <= 0xe
+   0x0000000000401035 <+41>:    call   0x40143a <explode_bomb>
+   0x000000000040103a <+46>:    mov    $0xe,%edx // 다음 함수의 세 번째 인자 = 0xe
+   0x000000000040103f <+51>:    mov    $0x0,%esi // 다음 함수의 두 번째 인자 = 0
+   0x0000000000401044 <+56>:    mov    0x8(%rsp),%edi // 다음 함수의 첫 번째 인자 = 첫 번째 입력값   0x0000000000401048 <+60>:    all   0x400fce <func4>
+   0x000000000040104d <+65>:    test   %eax,%eax
+   0x000000000040104f <+67>:    jne    0x401058 <phase_4+76>
+   0x0000000000401051 <+69>:    cmpl   $0x0,0xc(%rsp)
+   0x0000000000401056 <+74>:    je     0x40105d <phase_4+81>
+   0x0000000000401058 <+76>:    call   0x40143a <explode_bocmb>
+   0x000000000040105d <+81>:    add    $0x18,%rsp
+   0x0000000000401061 <+85>:    ret
+End of assembler dump.
+```
+
+```text
+(gdb) disas 0x400fce
+Dump of assembler code for function func4:
+   0x0000000000400fce <+0>:     sub    $0x8,%rsp
+   0x0000000000400fd2 <+4>:     mov    %edx,%eax // %eax == 0xe
+   0x0000000000400fd4 <+6>:     sub    %esi,%eax // %eax == 0xe
+   0x0000000000400fd6 <+8>:     mov    %eax,%ecx // %ecx == 0xe
+   0x0000000000400fd8 <+10>:    shr    $0x1f,%ecx // %ecx >>= 31 == 0
+   0x0000000000400fdb <+13>:    add    %ecx,%eax // %eax == 0xe
+   0x0000000000400fdd <+15>:    sar    $1,%eax // %eax >>= 1 == 0x7
+   0x0000000000400fdf <+17>:    lea    (%rax,%rsi,1),%ecx // %ecx == 0x7
+   0x0000000000400fe2 <+20>:    cmp    %edi,%ecx // 첫번째 입력 vs 0x7
+   0x0000000000400fe4 <+22>:    jle    0x400ff2 <func4+36> // 0x7 <= 첫번째
+   0x0000000000400fe6 <+24>:    lea    -0x1(%rcx),%edx
+   0x0000000000400fe9 <+27>:    call   0x400fce <func4>
+   0x0000000000400fee <+32>:    add    %eax,%eax
+   0x0000000000400ff0 <+34>:    jmp    0x401007 <func4+57>
+   0x0000000000400ff2 <+36>:    mov    $0x0,%eax // %eax = 0 <- 반환값
+   0x0000000000400ff7 <+41>:    cmp    %edi,%ecx
+   0x0000000000400ff9 <+43>:    jge    0x401007 <func4+57> // 0x7 >= 첫번째
+   0x0000000000400ffb <+45>:    lea    0x1(%rcx),%esi // if < 7, esi = (%rcx) + 1
+   0x0000000000400ffe <+48>:    call   0x400fce <func4>
+   0x0000000000401003 <+53>:    lea    0x1(%rax,%rax,1),%eax
+   0x0000000000401007 <+57>:    add    $0x8,%rsp
+   0x000000000040100b <+61>:    ret
+End of assembler dump.
+```
+
+* `mov $0xe, %edx` → `func4`의 세 번째 인자로 `14`를 전달한다.
+
+* `mov $0x0, %esi` → `func4`의 두 번째 인자로 `0`을 전달한다.
+
+* `mov 0x8(%rsp), %edi` → 첫 번째 입력값을 `func4`의 첫 번째 인자로 전달한다.
+
+* `call 0x400fce <func4>` → `func4(first_input, 0, 14)`를 호출한다.
+
+* `lea (%rax,%rsi,1), %ecx` → `lower + (upper - lower) / 2`를 계산하여 중앙값을 구한다.
+
+* `add %eax, %eax` → 왼쪽 탐색 결과를 `2 × result`로 변환한다.
+
+* `lea 0x1(%rax,%rax,1), %eax` → 오른쪽 탐색 결과를 `2 × result + 1`로 변환한다.
+
+* `test %eax, %eax` → `func4`의 반환값이 `0`인지 확인한다.
+
+* `cmpl $0x0, 0xc(%rsp)` → 두 번째 입력값과 `0`을 비교한다.
+
+* `je` → 두 번째 입력값이 `0`이면 Phase 4를 통과한다.
+
+* `func4(first_input, 0, 14)`의 반환값이 `0`이 되어야 한다.
+
+* 가능한 첫 번째 입력값: 0, 1, 3, 7
+
+* 두 번째 입력값: 0
+
+* 따라서 가능한 정답은: (0, 0), (1, 0), (3, 0), (7, 0)
+
+### 주요 x86-64 레지스터
+
+### 함수 호출
+
+```text
+%rdi → 1번째 인자
+%rsi → 2번째 인자
+%rdx → 3번째 인자
+%rcx → 4번째 인자
+```
+
+### 함수 반환
+
+```text
+%rax / %eax → 반환값
+```
+
+### 실행 및 Stack
+
+```text
+%rsp → Stack 위치
+%rip → 실행 위치
+```
+
+### 암기
+
+```text
+인자: RDI → RSI → RDX → RCX
+반환: RAX
+Stack: RSP
+실행: RIP
+```
