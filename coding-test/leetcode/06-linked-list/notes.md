@@ -1,4 +1,4 @@
-# **0206. Reverse Linked List (26.9.7)**
+# 0206. Reverse Linked List (26.9.7)
 
 **### 유형**
 
@@ -58,3 +58,133 @@ head->next = nullptr;
 * **시간복잡도(Time Complexity / 时间复杂度): `O(n)`**
 
 * **공간복잡도(Space Complexity / 空间复杂度): `O(1)`** — Iterative 기준. 
+
+
+# 0021. Merge Two Sorted Lists (26.9.8)
+
+**### 유형**
+
+* Linked List(链表)
+* Pointer Manipulation(指针操作)
+* Iteration(迭代)
+* Dummy Node(哨兵节点)
+
+**### 풀이**
+
+* 두 정렬된 Linked List의 현재 Node를 비교하고, **값이 작은 Node를 결과 List에 연결**한다.
+* `merged`는 결과 List의 시작점을 유지하는 **Dummy Node**이고, `cur`는 현재 결과 List의 마지막 Node를 가리킨다.
+
+```text
+① list1->val과 list2->val 비교
+
+② 값이 작은 Node를 cur->next에 연결
+
+③ 선택한 list 포인터를 다음 Node로 이동
+
+④ cur를 방금 연결한 Node로 이동
+```
+
+* 두 List 중 하나가 `nullptr`이 되면 다른 List에는 아직 처리하지 않은 Node들이 남아 있다.
+* 두 List 모두 이미 정렬되어 있으므로 **남은 List 전체를 한 번에 연결**할 수 있다.
+
+**### 헷갈렸던 부분**
+
+* `merged`와 `cur`의 역할을 분리해야 한다.
+* `merged`는 처음 위치를 유지하고, `cur`만 이동한다.
+
+```text
+merged
+  ↓
+dummy → 1 → 2 → 3 → 4
+                  ↑
+                 cur
+```
+
+* `cur->next = list1`은 새로운 Node를 만드는 것이 아니라 **기존 `list1` Node를 결과 List에 연결하는 것**이다.
+* 두 List 중 하나가 끝나면 남은 List는 이미 정렬되어 있으므로 하나씩 비교할 필요 없이 통째로 연결할 수 있다.
+* Dummy Node를 사용하면 첫 번째 Node를 별도로 처리할 필요가 없어지고 마지막에 `merged.next`를 반환하면 된다.
+
+**### Recursive(递归) 풀이**
+
+* 두 List의 head 중 값이 작은 Node를 선택하고, 선택한 Node의 `next`에 나머지 List를 재귀적으로 merge한다.
+* Recursive 방식도 시간은 `O(n + m)`이지만, 재귀 호출 스택 때문에 공간은 `O(n + m)`이다.
+* 따라서 이 문제에서는 **Iterative 방식이 추가 공간 `O(1)`이므로 더 효율적**이다.
+
+**### 배운 점**
+
+* 두 개의 정렬된 Linked List를 merge할 때는 **두 head를 비교하면서 작은 Node를 연결**한다.
+* 새로운 Node를 생성할 필요 없이 기존 Node의 `next`만 변경할 수 있다.
+* `Dummy Node + cur` 패턴을 사용하면 Linked List의 첫 Node 처리와 포인터 관리를 단순화할 수 있다.
+* Linked List에서는 **값을 이동시키는 것이 아니라 Node의 연결 관계를 변경하는 것**이 핵심이다.
+* Recursive 풀이도 가능하지만, 이 문제에서는 **Iterative 방식을 기본으로 한다.**
+
+**### 복잡도**
+
+* **시간복잡도(Time Complexity / 时间复杂度): `O(n + m)`**
+* **공간복잡도(Space Complexity / 空间复杂度): `O(1)`** — Iterative 기준.
+
+
+# 0141. Linked List Cycle (26.9.9)
+
+**### 유형**
+
+* Linked List(链表)
+
+* Pointer Manipulation(指针操作)
+
+* Iteration(迭代)
+
+* Two Pointers(快慢指针)
+
+* Floyd's Cycle Detection(弗洛伊德判圈算法)
+
+**### 풀이**
+
+* 처음에는 `vector<ListNode*>`에 지나간 Node의 주소를 저장하고, `find()`를 이용해 현재 Node가 이미 존재하는지 확인하는 방식으로 접근했다.
+
+* 하지만 `vector + find()` 방식은 `find()`가 선형 탐색을 수행하기 때문에 시간복잡도가 `O(n²)`이 된다.
+
+* 이후 **Floyd's Cycle Detection**을 사용하여 추가 메모리 없이 Cycle을 탐지했다.
+
+* `slow`는 한 번에 한 Node씩 이동하고, `fast`는 한 번에 두 Node씩 이동한다.
+
+* Cycle이 없다면 `fast`가 먼저 `nullptr`에 도달한다.
+
+* Cycle이 존재한다면 두 Pointer가 Cycle 내부에서 계속 이동하게 되고, 빠른 `fast`가 느린 `slow`를 결국 따라잡아 **같은 Node를 가리키게 된다.**
+
+* 따라서 `slow == fast`이면 Cycle이 존재한다고 판단하여 `true`를 반환한다.
+
+**### 헷갈렸던 부분**
+
+* 처음에는 지나간 `val`을 저장하면 된다고 생각했지만, **`val`이 같다고 같은 Node는 아니다.**
+
+* 따라서 방문 기록을 저장하는 방법에서는 `ListNode*`를 저장하여 **Node의 주소를 비교**해야 한다.
+
+* `fast`는 한 번에 두 칸 이동하기 때문에 이동하기 전에 `fast->next`와 `fast->next->next`가 존재하는지 확인해야 한다.
+
+```cpp
+while (fast->next != NULL && fast->next->next != NULL)
+```
+
+* Cycle이 없는 경우 `fast`가 먼저 List의 끝에 도달하므로 `false`를 반환한다.
+
+* Dummy Node나 새로운 List를 만들 필요 없이 **두 Pointer만으로 Cycle을 판단할 수 있다.**
+
+**### 배운 점**
+
+* Linked List의 Cycle 여부는 **Node의 `val`이 아니라 Node 자체의 동일성**을 기준으로 판단해야 한다.
+
+* 방문한 Node를 저장하는 방법에서는 `ListNode*`를 사용하여 Node의 주소를 비교할 수 있다.
+
+* 이 문제에서는 **방문한 Node의 존재 여부만 확인하면 되므로 `unordered_set`이 더 적합하다.**
+
+* `vector + find()` 방식보다 **Floyd's Cycle Detection을 사용하면 추가 메모리 없이 Cycle을 탐지할 수 있다.**
+* 따라서 Linked List의 Cycle 문제에서는 **Two Pointer + Floyd's Cycle Detection 패턴**을 기억한다.
+
+* **항상 nullptr의 next를 역참조하지 않는지 생각해야 한다.**
+
+**### 복잡도**
+
+* **시간복잡도(Time Complexity / 时间复杂度): `O(n)`**
+
+* **공간복잡도(Space Complexity / 空间复杂度): `O(1)`** — Floyd's Cycle Detection 기준.
