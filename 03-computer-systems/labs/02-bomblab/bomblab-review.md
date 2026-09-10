@@ -300,3 +300,115 @@ End of assembler dump.
 Stack: RSP
 실행: RIP
 ```
+
+
+## Phase 5
+
+```text
+Dump of assembler code for function phase_5:
+   0x0000000000401062 <+0>:     push   %rbx
+   0x0000000000401063 <+1>:     sub    $0x20,%rsp
+   0x0000000000401067 <+5>:     mov    %rdi,%rbx // %rbx = first input string address
+   0x000000000040106a <+8>:     mov    %fs:0x28,%rax
+   0x0000000000401073 <+17>:    mov    %rax,0x18(%rsp)
+   0x0000000000401078 <+22>:    xor    %eax,%eax // %eax = 0
+   0x000000000040107a <+24>:    call   0x40131b <string_length>
+   0x000000000040107f <+29>:    cmp    $0x6,%eax // len == 6?
+   0x0000000000401082 <+32>:    je     0x4010d2 <phase_5+112>
+   0x0000000000401084 <+34>:    call   0x40143a <explode_bomb>
+   0x0000000000401089 <+39>:    jmp    0x4010d2 <phase_5+112>
+   0x000000000040108b <+41>:    movzbl (%rbx,%rax,1),%ecx // %ecx = input[rax] (zero-extended)
+   0x000000000040108f <+45>:    mov    %cl,(%rsp) // stack에 %cl 1바이트 저장
+   0x0000000000401092 <+48>:    mov    (%rsp),%rdx // rsp부터 8바이트를 %rdx로 읽음
+   0x0000000000401096 <+52>:    and    $0xf,%edx // 하위 4비트만 저장
+   0x0000000000401099 <+55>:    movzbl 0x4024b0(%rdx),%edx // %edx = (char)
+   0x00000000004010a0 <+62>:    mov    %dl,0x10(%rsp,%rax,1)
+   0x00000000004010a4 <+66>:    add    $0x1,%rax // %rax += 1
+   0x00000000004010a8 <+70>:    cmp    $0x6,%rax
+   0x00000000004010ac <+74>:    jne    0x40108b <phase_5+41>
+   0x00000000004010ae <+76>:    movb   $0x0,0x16(%rsp) // 1바이트 0을 저장
+   0x00000000004010b3 <+81>:    mov    $0x40245e,%esi // 두번째 인자: 주소값
+   0x00000000004010b8 <+86>:    lea    0x10(%rsp),%rdi // %rdi = %rsp + 0x10
+   0x00000000004010bd <+91>:    call   0x401338 <strings_not_equal>
+   0x00000000004010c2 <+96>:    test   %eax,%eax
+   0x00000000004010c4 <+98>:    je     0x4010d9 <phase_5+119>
+   0x00000000004010c6 <+100>:   call   0x40143a <explode_bomb>
+   0x00000000004010cb <+105>:   nopl   0x0(%rax,%rax,1)
+   0x00000000004010d0 <+110>:   jmp    0x4010d9 <phase_5+119>
+   0x00000000004010d2 <+112>:   mov    $0x0,%eax
+   0x00000000004010d7 <+117>:   jmp    0x40108b <phase_5+41>
+   0x00000000004010d9 <+119>:   mov    0x18(%rsp),%rax
+   0x00000000004010de <+124>:   xor    %fs:0x28,%rax
+   0x00000000004010e7 <+133>:   je     0x4010ee <phase_5+140>
+   0x00000000004010e9 <+135>:   call   0x400b30 <__stack_chk_fail@plt>
+   0x00000000004010ee <+140>:   add    $0x20,%rsp
+   0x00000000004010f2 <+144>:   pop    %rbx
+   0x00000000004010f3 <+145>:   ret
+End of assembler dump.
+
+(gdb) x/s 0x4024b0
+0x4024b0 <array.3449>:  "maduiersnfotvbylSo you think you can stop the bomb with ctrl-c, do you?"
+
+(gdb) x/s 0x40245e
+0x40245e:       "flyers"
+
+```
+
+
+* push %rbx 는 
+  sub $8, %rsp // 8바이트
+  mov %rbx, (%rsp) 와 같은 동작
+
+* **Segment Register(세그먼트 레지스터)** → 특정 메모리 영역에 접근할 때 기준으로 사용할 수 있는 특수 레지스터. x86-64 Linux에서는 `%fs`가 주로 현재 Thread의 TLS에 접근하는 데 사용된다.
+
+* **TLS(Thread Local Storage)** → 각 Thread가 독립적으로 가지는 전용 데이터 저장 영역.
+
+* `mov %fs:0x28, %rax` → TLS의 `FS base + 0x28` 위치에 있는 값을 `%rax`에 저장한다. Linux x86-64에서는 Stack Canary(실행 중 스택 메모리가 덮어써졌는지 감지하는 보안용 감시 값)를 읽어오는 전형적인 패턴이다.
+
+* xor %eax,%eax → %eax를 0으로 초기화하는 전형적인 어셈블리 패턴.
+
+* xor reg, reg → 효율적인 0 초기화 + Flags 변경
+  mov $0, reg → 0 초기화 + 기존 Flags 보존
+  => 뒤에서 기존 Condition Code를 계속 사용해야 한다면 mov
+
+* `movzbl (%rbx,%rax,1), %ecx`
+  * `mov` → **Move**: 데이터를 이동한다.
+  * `z` → **Zero Extend**: 남는 상위 비트를 `0`으로 채운다.
+  * `b` → **Byte (8-bit)**: Source에서 1바이트를 읽는다.
+  * `l` → **Long (32-bit)**: 32비트로 확장한다.
+  * `(%rbx,%rax,1)` → `%rbx + %rax × 1`로 주소를 계산한다.
+  * `%ecx` → 읽은 1바이트를 **Zero Extension(零扩展)**하여 32비트로 저장한다.
+
+* %rcx  → 64비트
+  %ecx  → 하위 32비트
+  %cx   → 하위 16비트
+  %cl   → 하위 8비트
+
+* `test %eax, %eax` → `%eax & %eax`를 수행해 **Flag만 설정하고 결과는 저장하지 않는다.** 같은 값을 AND하므로 `%eax`가 `0`인지 검사할 때 주로 사용. `%eax`가 `0`이면 ZF = 1.
+
+* `nopl 0x0(%rax,%rax,1)` → **NOP(No Operation)** 명령어로, 실질적인 연산을 수행하지 않는다.
+  * 레지스터와 메모리의 값을 변경하지 않는다.
+  * 여기서는 주로 **명령어 주소 정렬(Alignment) 및 Padding**을 위해 삽입된 것으로 볼 수 있다.
+
+* `mov 0x18(%rsp), %rax` → Stack에 저장해둔 **Stack Canary**를 가져온다.
+* `xor %fs:0x28, %rax` → 원본 Canary와 비교한다. 같으면 결과가 `0` → `ZF = 1`.
+* `je` → Canary가 같으면 정상 종료한다.
+* `__stack_chk_fail` → Canary가 다르면 Stack 손상으로 판단한다.
+* `add $0x20, %rsp` → 확보했던 32바이트 Stack 공간을 반환한다.
+* `pop %rbx` → Stack에 저장했던 기존 `%rbx`를 복구한다.
+
+* 정답:
+* 입력은 **6글자**여야 한다.
+* 각 입력 문자의 ASCII 값에 `& 0xF` → **하위 4비트만 추출**한다.
+* 추출값을 `"maduiersnfotvbyl"`의 인덱스로 사용한다.
+* 변환된 6글자가 `"flyers"`와 같으면 통과한다.
+
+`flyers`에 필요한 인덱스:
+
+`f → 9`, `l → F`, `y → E`, `e → 5`, `r → 6`, `s → 7`
+
+→ 필요한 하위 4비트: `9 F E 5 6 7`
+
+예: `ionefg` → `9FE567` → `flyers`
+
+* 하위 4비트만 비교하므로 가능한 입력은 여러 개다.
