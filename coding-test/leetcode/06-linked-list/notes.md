@@ -188,3 +188,70 @@ while (fast->next != NULL && fast->next->next != NULL)
 * **시간복잡도(Time Complexity / 时间复杂度): `O(n)`**
 
 * **공간복잡도(Space Complexity / 空间复杂度): `O(1)`** — Floyd's Cycle Detection 기준.
+
+
+# 0876. Middle of the Linked List (26.9.10)
+
+### 유형
+
+* Linked List(链表)
+
+* Pointer Manipulation(指针操作)
+
+* Iteration(迭代)
+
+* Two Pointers(快慢指针)
+
+* Slow / Fast Pointer
+
+### 풀이
+
+* 처음에는 `vector<ListNode*>`에 모든 Node의 주소를 저장한 뒤, `v[v.size() / 2]`를 반환하는 방식으로 접근했다.
+
+* 이 방법은 List를 한 번 순회하므로 시간복잡도는 `O(n)`이지만, 모든 Node의 주소를 저장하기 때문에 공간복잡도가 `O(n)`이다.
+
+* 이후 **Slow / Fast Pointer**를 사용하여 추가 메모리 없이 중간 Node를 찾았다.
+
+* `slow`는 한 번에 한 Node씩 이동하고, `fast`는 한 번에 두 Node씩 이동한다.
+
+### 헷갈렸던 부분
+
+* 처음에는 Linked List의 중간 Node를 찾으려면 모든 Node를 저장해야 한다고 생각했지만, **Pointer의 이동 속도 차이를 이용하면 Node의 개수를 직접 셀 필요가 없다.**
+
+* 특히 Linked List에서는 **현재 Pointer 자체가 `nullptr`인지 먼저 확인한 뒤 `->next`를 접근하는 습관**이 중요하다.
+
+### 배운 점
+
+* Linked List의 특정 위치를 찾을 때 모든 Node를 저장하지 않고 **Pointer의 이동 속도 차이**를 활용할 수 있다.
+
+* `slow`가 1칸, `fast`가 2칸 이동하면 `fast`가 끝에 도착했을 때 `slow`가 중간 지점에 위치한다.
+
+* 따라서 Middle Node 문제에서는 **Slow / Fast Pointer 패턴**을 먼저 생각할 수 있다.
+
+* Linked List에서는 **항상 `nullptr`의 `next`를 역참조하지 않는지 확인해야 한다.**
+
+* Slow / Fast Pointer는 단순히 Middle Node를 찾는 것뿐만 아니라 Cycle 탐지 등 여러 Linked List 문제에 활용된다.
+
+### Slow / Fast Pointer 활용 유형
+
+* **중간 Node 찾기**
+* **Cycle 존재 여부 확인**
+* **Cycle 시작점 찾기**
+* **뒤에서 N번째 Node 찾기**
+* **Linked List를 절반으로 분할**
+
+```text
+속도 차이
+→ 중간 위치 / Cycle 탐지
+
+거리 차이
+→ 뒤에서 N번째 위치
+```
+
+* 즉, `slow / fast`를 단순히 **"1칸 / 2칸 이동"**으로 외우기보다, **두 Pointer의 속도 또는 거리 차이를 이용하여 원하는 위치 관계를 만든다**고 이해한다.
+
+### 복잡도
+
+* **시간복잡도(Time Complexity / 时间复杂度): `O(n)`**
+
+* **공간복잡도(Space Complexity / 空间复杂度): `O(1)`** — Slow / Fast Pointer 기준.
