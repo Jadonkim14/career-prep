@@ -412,3 +412,393 @@ End of assembler dump.
 예: `ionefg` → `9FE567` → `flyers`
 
 * 하위 4비트만 비교하므로 가능한 입력은 여러 개다.
+
+
+# Phase 6
+
+```text
+Dump of assembler code for function phase_6:
+   0x00000000004010f4 <+0>:     push   %r14
+   0x00000000004010f6 <+2>:     push   %r13
+   0x00000000004010f8 <+4>:     push   %r12
+   0x00000000004010fa <+6>:     push   %rbp
+   0x00000000004010fb <+7>:     push   %rbx
+   0x00000000004010fc <+8>:     sub    $0x50,%rsp
+   0x0000000000401100 <+12>:    mov    %rsp,%r13
+   0x0000000000401103 <+15>:    mov    %rsp,%rsi
+   0x0000000000401106 <+18>:    call   0x40145c <read_six_numbers>
+   0x000000000040110b <+23>:    mov    %rsp,%r14
+   0x000000000040110e <+26>:    mov    $0x0,%r12d
+   0x0000000000401114 <+32>:    mov    %r13,%rbp
+   0x0000000000401117 <+35>:    mov    0x0(%r13),%eax
+   0x000000000040111b <+39>:    sub    $0x1,%eax
+   0x000000000040111e <+42>:    cmp    $0x5,%eax
+   0x0000000000401121 <+45>:    jbe    0x401128 <phase_6+52> // 0 <= (unsigned)%eax - 1 <= 6
+   0x0000000000401123 <+47>:    call   0x40143a <explode_bomb>
+   0x0000000000401128 <+52>:    add    $0x1,%r12d // %r12d == 1
+   0x000000000040112c <+56>:    cmp    $0x6,%r12d
+   0x0000000000401130 <+60>:    je     0x401153 <phase_6+95>
+   0x0000000000401132 <+62>:    mov    %r12d,%ebx
+   0x0000000000401135 <+65>:    movslq %ebx,%rax
+   0x0000000000401138 <+68>:    mov    (%rsp,%rax,4),%eax
+   0x000000000040113b <+71>:    cmp    %eax,0x0(%rbp) // nums[0] != nums[1]
+   0x000000000040113e <+74>:    jne    0x401145 <phase_6+81>
+   0x0000000000401140 <+76>:    call   0x40143a <explode_bomb>
+   0x0000000000401145 <+81>:    add    $0x1,%ebx //%ebx == 2
+   0x0000000000401148 <+84>:    cmp    $0x5,%ebx
+   0x000000000040114b <+87>:    jle    0x401135 <phase_6+65>
+   0x000000000040114d <+89>:    add    $0x4,%r13
+   0x0000000000401151 <+93>:    jmp    0x401114 <phase_6+32>
+   0x0000000000401153 <+95>:    lea    0x18(%rsp),%rsi
+   0x0000000000401158 <+100>:   mov    %r14,%rax
+   0x000000000040115b <+103>:   mov    $0x7,%ecx
+   0x0000000000401160 <+108>:   mov    %ecx,%edx
+   0x0000000000401162 <+110>:   sub    (%rax),%edx
+   0x0000000000401164 <+112>:   mov    %edx,(%rax)
+   0x0000000000401166 <+114>:   add    $0x4,%rax
+   0x000000000040116a <+118>:   cmp    %rsi,%rax
+   0x000000000040116d <+121>:   jne    0x401160 <phase_6+108>
+   0x000000000040116f <+123>:   mov    $0x0,%esi
+   0x0000000000401174 <+128>:   jmp    0x401197 <phase_6+163>
+   0x0000000000401176 <+130>:   mov    0x8(%rdx),%rdx
+   0x000000000040117a <+134>:   add    $0x1,%eax
+   0x000000000040117d <+137>:   cmp    %ecx,%eax
+   0x000000000040117f <+139>:   jne    0x401176 <phase_6+130>
+   0x0000000000401181 <+141>:   jmp    0x401188 <phase_6+148>
+   0x0000000000401183 <+143>:   mov    $0x6032d0,%edx
+   0x0000000000401188 <+148>:   mov    %rdx,0x20(%rsp,%rsi,2)
+   0x000000000040118d <+153>:   add    $0x4,%rsi
+   0x0000000000401191 <+157>:   cmp    $0x18,%rsi
+   0x0000000000401195 <+161>:   je     0x4011ab <phase_6+183>
+   0x0000000000401197 <+163>:   mov    (%rsp,%rsi,1),%ecx // %ecx == num[i]
+   0x000000000040119a <+166>:   cmp    $0x1,%ecx
+   0x000000000040119d <+169>:   jle    0x401183 <phase_6+143> // %ecx <= 1
+   0x000000000040119f <+171>:   mov    $0x1,%eax
+   0x00000000004011a4 <+176>:   mov    $0x6032d0,%edx
+   0x00000000004011a9 <+181>:   jmp    0x401176 <phase_6+130>
+   0x00000000004011ab <+183>:   mov    0x20(%rsp),%rbx
+   0x00000000004011b0 <+188>:   lea    0x28(%rsp),%rax
+   0x00000000004011b5 <+193>:   lea    0x50(%rsp),%rsi
+   0x00000000004011ba <+198>:   mov    %rbx,%rcx
+   0x00000000004011bd <+201>:   mov    (%rax),%rdx
+   0x00000000004011c0 <+204>:   mov    %rdx,0x8(%rcx)
+   0x00000000004011c4 <+208>:   add    $0x8,%rax
+   0x00000000004011c8 <+212>:   cmp    %rsi,%rax
+   0x00000000004011cb <+215>:   je     0x4011d2 <phase_6+222>
+   0x00000000004011cd <+217>:   mov    %rdx,%rcx
+   0x00000000004011d0 <+220>:   jmp    0x4011bd <phase_6+201>
+   0x00000000004011d2 <+222>:   movq   $0x0,0x8(%rdx)
+   0x00000000004011da <+230>:   mov    $0x5,%ebp
+   0x00000000004011df <+235>:   mov    0x8(%rbx),%rax
+   0x00000000004011e3 <+239>:   mov    (%rax),%eax
+   0x00000000004011e5 <+241>:   cmp    %eax,(%rbx)
+   0x00000000004011e7 <+243>:   jge    0x4011ee <phase_6+250>
+   0x00000000004011e9 <+245>:   call   0x40143a <explode_bomb>
+   0x00000000004011ee <+250>:   mov    0x8(%rbx),%rbx
+   0x00000000004011f2 <+254>:   sub    $0x1,%ebp
+   0x00000000004011f5 <+257>:   jne    0x4011df <phase_6+235>
+   0x00000000004011f7 <+259>:   add    $0x50,%rsp
+   0x00000000004011fb <+263>:   pop    %rbx
+   0x00000000004011fc <+264>:   pop    %rbp
+   0x00000000004011fd <+265>:   pop    %r12
+   0x00000000004011ff <+267>:   pop    %r13
+   0x0000000000401201 <+269>:   pop    %r14
+   0x0000000000401203 <+271>:   ret
+End of assembler dump.
+
+Dump of assembler code for function read_six_numbers:
+   0x000000000040145c <+0>:     sub    $0x18,%rsp
+   0x0000000000401460 <+4>:     mov    %rsi,%rdx
+   0x0000000000401463 <+7>:     lea    0x4(%rsi),%rcx
+   0x0000000000401467 <+11>:    lea    0x14(%rsi),%rax
+   0x000000000040146b <+15>:    mov    %rax,0x8(%rsp)
+   0x0000000000401470 <+20>:    lea    0x10(%rsi),%rax
+   0x0000000000401474 <+24>:    mov    %rax,(%rsp)
+   0x0000000000401478 <+28>:    lea    0xc(%rsi),%r9
+   0x000000000040147c <+32>:    lea    0x8(%rsi),%r8
+   0x0000000000401480 <+36>:    mov    $0x4025c3,%esi
+   0x0000000000401485 <+41>:    mov    $0x0,%eax
+   0x000000000040148a <+46>:    call   0x400bf0 <__isoc99_sscanf@plt>
+   0x000000000040148f <+51>:    cmp    $0x5,%eax
+   0x0000000000401492 <+54>:    jg     0x401499 <read_six_numbers+61>
+   0x0000000000401494 <+56>:    call   0x40143a <explode_bomb>
+   0x0000000000401499 <+61>:    add    $0x18,%rsp
+   0x000000000040149d <+65>:    ret
+End of assembler dump.
+```
+
+```text
+| 구분           | 핵심 암기                             |
+| ------------ | --------------------------------- |
+| Caller-saved | `rax, rcx, rdx, rsi, rdi, r8-r11` |
+| Callee-saved | `rbx, rbp, r12-r15`               |
+```
+
+* rsp  = 숫자 6개를 저장할 공간
+* r13  = 그 공간의 시작 주소를 계속 기억
+* rsi  = 그 주소를 함수 인자로 전달
+
+* %r12d: r12의 하위 32비트 부분
+
+* read_six_numbers mov %rax,0x8(%rsp), mov %rax,(%rsp): sscanf에 넘길 인자가 8개인데, 레지스터로는 6개까지만 전달 가능해서 나머지 &a[4], &a[5]는 스택에 넣은 것.
+
+* sub    $0x1,%eax, cmp    $0x5,%eax 하는 이유: jbe의 unsigned 오버플로우를 이용해서 0 이하와 7 이상을 한 번에 걸러내기 위해서
+
+* movslq: signed long -> quad로 부호 확장해서 이동
+
+*<+95~112>: x → 7 - x로 뒤집어서 순서를 반전 (1↔6, 2↔5, 3↔4)
+
+* 0x6032d0 <node1>:       0x0000014c      0x00000001      0x006032e0      0x00000000
+  => [4 bytes int][4 bytes int][8 bytes pointer]
+  => struct Node {int something1;int something2;struct Node *something3;};
+
+## 1. 입력 6개 읽기
+
+```asm
+mov    %rsp,%rsi
+call   read_six_numbers
+```
+
+C :
+
+```c
+int nums[6];
+read_six_numbers(input, nums);
+```
+
+여기서 `rsp`가 `nums` 시작 주소 역할.
+
+---
+
+## 2. 값이 1~6인지 검사
+
+```asm
+mov    0x0(%r13),%eax
+sub    $0x1,%eax
+cmp    $0x5,%eax
+jbe    valid
+call   explode_bomb
+```
+
+C:
+
+```c
+int x = *p;
+
+if ((unsigned)(x - 1) > 5)
+    explode_bomb();
+```
+
+---
+
+## 3. 중복 검사
+
+```asm
+movslq %ebx,%rax
+mov    (%rsp,%rax,4),%eax
+cmp    %eax,0x0(%rbp)
+jne    not_equal
+call   explode_bomb
+```
+
+C:
+
+```c
+if (nums[i] == nums[j])
+    explode_bomb();
+```
+
+전체 구조:
+
+```c
+for (int i = 0; i < 6; i++) {
+    for (int j = i + 1; j < 6; j++) {
+        if (nums[i] == nums[j])
+            explode_bomb();
+    }
+}
+```
+
+---
+
+## 4. `7 - x` 변환
+
+```asm
+mov    $0x7,%ecx
+
+loop:
+mov    %ecx,%edx
+sub    (%rax),%edx
+mov    %edx,(%rax)
+
+add    $0x4,%rax
+cmp    %rsi,%rax
+jne    loop
+```
+
+C:
+
+```c
+for (int i = 0; i < 6; i++) {
+    nums[i] = 7 - nums[i];
+}
+```
+
+---
+
+## 5. Linked List에서 n번째 노드 찾기
+
+초기화:
+
+```asm
+mov    $0x1,%eax
+mov    $0x6032d0,%edx
+```
+
+C:
+
+```c
+int count = 1;
+Node *p = &node1;
+```
+
+다음 노드로 이동:
+
+```asm
+mov    0x8(%rdx),%rdx
+add    $0x1,%eax
+cmp    %ecx,%eax
+jne    loop
+```
+
+C:
+
+```c
+while (count != nums[i]) {
+    p = p->next;
+    count++;
+}
+```
+
+구조체는 메모리 패턴상:
+
+```c
+struct Node {
+    int value;
+    int index;
+    struct Node *next;
+};
+```
+
+여기서:
+
+```asm
+mov 0x8(%rdx), %rdx
+```
+
+는:
+
+```c
+p = p->next;
+```
+
+---
+
+## 6. 선택한 노드 주소 저장
+
+```asm
+mov %rdx,0x20(%rsp,%rsi,2)
+```
+
+C:
+
+```c
+selected[i] = p;
+```
+
+즉:
+
+```c
+Node *selected[6];
+```
+
+배열을 만드는 중.
+
+---
+
+## 7. 선택한 순서대로 노드 재연결
+
+```asm
+mov    0x20(%rsp),%rbx
+lea    0x28(%rsp),%rax
+mov    %rbx,%rcx
+
+loop:
+mov    (%rax),%rdx
+mov    %rdx,0x8(%rcx)
+add    $0x8,%rax
+...
+mov    %rdx,%rcx
+```
+
+C 핵심:
+
+```c
+selected[0]->next = selected[1];
+selected[1]->next = selected[2];
+selected[2]->next = selected[3];
+selected[3]->next = selected[4];
+selected[4]->next = selected[5];
+```
+
+루프로 쓰면:
+
+```c
+for (int i = 0; i < 5; i++) {
+    selected[i]->next = selected[i + 1];
+}
+```
+
+마지막:
+
+```asm
+movq $0x0,0x8(%rdx)
+```
+
+C:
+
+```c
+selected[5]->next = NULL;
+```
+
+---
+
+## 8. value가 내림차순인지 검사
+
+```asm
+mov    0x8(%rbx),%rax
+mov    (%rax),%eax
+cmp    %eax,(%rbx)
+jge    ok
+call   explode_bomb
+```
+
+C:
+
+```c
+if (rbx->value < rbx->next->value)
+    explode_bomb();
+```
+
+전체:
+
+```c
+Node *p = selected[0];
+
+for (int i = 0; i < 5; i++) {
+    if (p->value < p->next->value)
+        explode_bomb();
+
+    p = p->next;
+}
+```
