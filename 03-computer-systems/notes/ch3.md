@@ -339,3 +339,96 @@ OF → Overflow → Signed
 * `CMOV` → 값 선택
 * `Loops` → 조건 검사와 Jump의 조합
 * 컴파일러는 의미를 유지하면서 더 효율적인 Assembly로 최적화한다.
+
+
+## 3.3 Machine Prog: Procedures (26.09.11)
+
+### 1. Switch Statements
+
+큰 `switch`는 **Jump Table(跳转表)** 로 구현될 수 있다.
+
+```asm
+cmpl $6, %eax
+ja .L2
+jmp *.L7(,%eax,4)
+```
+
+* `%eax = x`
+* `ja` → unsigned 기준 `x > 6`이면 `default`
+* `jmp *.L7(,%eax,4)` → jump table에서 target 주소를 읽어 간접 점프
+* IA32에서는 주소가 4 byte라 `x * 4`
+* fall-through는 코드 흐름을 이어서 구현
+
+---
+
+### 2. IA32 Stack
+
+* Stack은 **낮은 주소 방향으로 성장**
+* `%esp` = 현재 stack top 주소
+
+```text
+pushl:
+%esp -= 4
+Memory[%esp] = value
+
+popl:
+value = Memory[%esp]
+%esp += 4
+```
+
+---
+
+### 3. `call` / `ret`
+
+`call`:
+
+```text
+Return Address를 stack에 저장
+→ callee로 이동
+```
+
+`ret`:
+
+```text
+stack에서 Return Address를 꺼냄
+→ caller로 복귀
+```
+
+예:
+
+```text
+%esp = 0x1000
+call 실행
+→ %esp = 0x0FFC
+→ Memory[0x0FFC] = Return Address
+```
+
+---
+
+### 4. `%eip` vs `%esp`
+
+```text
+%eip → 실행할 instruction 주소
+%esp → 현재 stack top 주소
+```
+
+둘 다 CPU register이며, 같은 프로세스의 **Virtual Address Space(虚拟地址空间)** 안에서 서로 다른 영역을 가리킨다.
+
+```text
+Code / Text ← %eip
+Stack       ← %esp
+```
+
+---
+
+### 핵심
+
+```text
+switch → Jump Table → Indirect Jump
+
+call → Return Address push
+ret  → Return Address pop
+
+%eip → 코드 위치
+%esp → 스택 위치
+```
