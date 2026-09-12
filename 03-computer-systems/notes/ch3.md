@@ -421,14 +421,455 @@ Stack       ← %esp
 
 ---
 
-### 핵심
+### 5. Stack Frame
+
+함수가 호출될 때마다 해당 함수의 실행 정보를 저장하는 **Stack Frame(栈帧)** 이 생성된다.
 
 ```text
-switch → Jump Table → Indirect Jump
+Arguments
+Return Address
+Old %ebp        ← %ebp
+Saved Registers
+Local Variables
+Argument Build  ← %esp
+```
+
+* `%ebp` → 현재 함수 stack frame의 기준점
+* `%esp` → 현재 stack top
+* `8(%ebp)`, `12(%ebp)` 등으로 argument 접근
+* `-4(%ebp)` 등으로 local variable 접근 가능
+
+함수 시작:
+
+```asm
+pushl %ebp
+movl %esp, %ebp
+```
+
+함수 종료 시 기존 `%ebp`를 복구한다.
+
+---
+
+### 6. Register Saving Convention
+
+함수 호출 시 register 값이 망가지지 않도록 **Calling Convention(调用约定)** 을 사용한다.
+
+```text
+Caller-save
+%eax %ecx %edx
+→ caller가 필요하면 호출 전에 저장
+
+Callee-save
+%ebx %esi %edi
+→ callee가 사용하면 저장 후 복구
+```
+
+예:
+
+```asm
+pushl %ebx
+...
+popl %ebx
+```
+
+`%eax`는 정수 반환값에도 사용된다.
+
+---
+
+### 7. Recursion
+
+재귀 호출도 일반 함수 호출과 동일하다.
+
+```text
+pcount_r(5)
+→ pcount_r(2)
+→ pcount_r(1)
+→ pcount_r(0)
+```
+
+호출될 때마다 새로운 stack frame이 생성된다.
+
+```text
+call
+→ 새로운 frame 생성
+→ recursive call
+→ base case
+→ ret을 통해 역순으로 복귀
+```
+
+재귀 호출 결과는 `%eax`에 반환된다.
+
+예:
+
+```asm
+call pcount_r
+```
+
+이후:
+
+```text
+%eax = pcount_r(x >> 1)의 결과
+```
+
+그리고:
+
+```asm
+leal (%edx,%eax), %eax
+```
+
+를 통해:
+
+```text
+(x & 1) + recursive result
+```
+
+를 계산한다.
+
+---
+
+### 8. Pointer와 Local Variable
+
+지역변수의 주소가 필요하면 해당 변수를 stack에 저장할 수 있다.
+
+예:
+
+```c
+int localx = x;
+incrk(&localx, 3);
+```
+
+PPT에서는:
+
+```text
+-4(%ebp) → localx
+```
+
+로 배치한다.
+
+값 읽기:
+
+```asm
+movl -4(%ebp), %eax
+```
+
+→ `localx`의 값
+
+주소 계산:
+
+```asm
+leal -4(%ebp), %eax
+```
+
+→ `&localx`
+
+즉:
+
+```text
+movl → 메모리의 값
+leal → 메모리 주소
+```
+
+다른 함수에 주소를 넘기면 해당 함수가 원래 stack frame의 변수를 직접 수정할 수 있다.
+
+---
+
+### 9. Procedure 전체 흐름
+
+```text
+Caller
+↓
+Argument 준비
+↓
+call
+↓
+Return Address 저장
+↓
+Stack Frame 생성
+↓
+함수 실행
+↓
+Return Value → %eax
+↓
+Register / %ebp 복구
+↓
+ret
+↓
+Caller 복귀
+```
+
+### 최종 핵심
+
+```text
+%ebp → 현재 함수 frame의 기준점
+%esp → 현재 stack top
 
 call → Return Address push
 ret  → Return Address pop
 
-%eip → 코드 위치
-%esp → 스택 위치
+Caller-save → %eax %ecx %edx
+Callee-save → %ebx %esi %edi
+
+Recursion → 호출마다 별도의 stack frame 생성
+
+Pointer → 결국 memory address
+leal → 주소 계산
 ```
+
+
+## 3.4 Machine Prog: Data
+
+### 1. Array
+
+배열은 **연속된 메모리(连续内存)** 에 저장된다.
+
+```c
+T A[L];
+```
+
+전체 크기:
+
+```text
+L × sizeof(T)
+```
+
+원소 주소:
+
+```text
+&A[i]
+= base + i × element size
+```
+
+예:
+
+```c
+int A[5];
+```
+
+```text
+A[0] → base
+A[1] → base + 4
+A[2] → base + 8
+```
+
+Assembly:
+
+```asm
+movl (%edx,%eax,4), %eax
+```
+
+```text
+address = base + index × 4
+```
+
+---
+
+### 2. 2D Array
+
+```c
+int A[R][C];
+```
+
+C의 2차원 배열은 **Row-Major Order(行优先)** 로 저장된다.
+
+```text
+A[0][0] ... A[0][C-1]
+A[1][0] ... A[1][C-1]
+...
+```
+
+원소 주소:
+
+```text
+&A[i][j]
+= base + (i × C + j) × element size
+```
+
+`int`라면:
+
+```text
+= base + (i × C + j) × 4
+```
+
+---
+
+### 3. Nested Array vs Multi-Level Array
+
+Nested Array:
+
+```c
+int A[4][5];
+```
+
+모든 데이터가 연속 배치된다.
+
+```text
+A[i][j]
+→ base + (i × 5 + j) × 4
+```
+
+Multi-Level Array:
+
+```c
+int *A[4];
+```
+
+각 원소가 pointer이므로:
+
+```text
+A[i]
+↓
+row pointer 읽기
+↓
+A[i][j] 접근
+```
+
+즉 memory access가 한 단계 더 필요하다.
+
+---
+
+### 4. Matrix Access
+
+고정 크기:
+
+```c
+int A[16][16];
+```
+
+한 row 크기:
+
+```text
+16 × 4 = 64 bytes
+```
+
+따라서:
+
+```text
+&A[i][j]
+= base + i × 64 + j × 4
+```
+
+가변 크기:
+
+```c
+int A[n][n];
+```
+
+```text
+row size = 4n
+
+&A[i][j]
+= base + i × 4n + j × 4
+```
+
+---
+
+### 5. Structure
+
+구조체는 여러 member를 하나의 연속된 메모리 영역에 저장한다.
+
+```c
+struct rec {
+    int a[3];
+    int i;
+    struct rec *n;
+};
+```
+
+PPT 기준:
+
+```text
+offset
+
+0   a[0]
+4   a[1]
+8   a[2]
+12  i
+16  n
+```
+
+Member 접근:
+
+```text
+structure base + member offset
+```
+
+예:
+
+```c
+r->i
+```
+
+```text
+r + 12
+```
+
+---
+
+### 6. Struct 내부 Array
+
+```c
+r->a[i]
+```
+
+주소:
+
+```text
+base + member offset + i × element size
+```
+
+위 구조체에서는 `a`의 offset이 0이므로:
+
+```text
+r->a[i]
+→ r + i × 4
+```
+
+---
+
+### 7. Linked List
+
+```c
+while (r) {
+    int i = r->i;
+    r->a[i] = val;
+    r = r->n;
+}
+```
+
+Assembly 흐름:
+
+```text
+r + 12
+→ r->i
+
+r + i × 4
+→ r->a[i]
+
+r + 16
+→ r->n
+
+next pointer를 읽어서 다음 node 이동
+```
+
+---
+
+### 최종 핵심
+
+```text
+Array
+→ base + index × element size
+
+2D Array
+→ base + (row × columns + column) × element size
+
+Struct
+→ base + member offset
+
+Struct Array Member
+→ base + member offset + index × element size
+
+Linked List
+→ next pointer를 읽어서 다음 node로 이동
+```
+
+결국 Machine-Level에서 **Array, Struct, Matrix, Linked List는 모두 주소 계산 + Memory Access 문제**이다.
