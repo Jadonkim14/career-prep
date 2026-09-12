@@ -255,3 +255,69 @@ while (fast->next != NULL && fast->next->next != NULL)
 * **시간복잡도(Time Complexity / 时间复杂度): `O(n)`**
 
 * **공간복잡도(Space Complexity / 空间复杂度): `O(1)`** — Slow / Fast Pointer 기준.
+
+
+# 0083. Remove Duplicates from Sorted List (26.9.12)
+
+**### 유형**
+
+* Linked List(链表)
+
+* Pointer Manipulation(指针操作)
+
+* Iteration(迭代)
+
+**### 풀이**
+
+* `cur`와 `cur->next`를 비교해서 값이 같으면 다음 Node를 삭제한다.
+
+* 중복을 삭제한 경우에는 `cur`를 이동하지 않고 다시 비교한다.
+
+* 값이 다를 때만 `cur = cur->next`로 이동한다.
+
+**### 헷갈렸던 부분**
+
+* 중복 삭제 후 `cur`까지 이동하면 연속된 중복을 놓칠 수 있다.
+
+```text
+1 → 1 → 1 → 2
+```
+
+* 따라서:
+
+```text
+중복
+→ next 삭제
+→ cur 유지
+
+다름
+→ cur 이동
+```
+
+* 처음에 `head == nullptr`을 처리하면 `cur`는 항상 유효하므로:
+
+```cpp
+while (cur->next)
+```
+
+만 사용해도 된다.
+
+**### 배운 점**
+
+* Linked List 삭제에서는 Node 값보다 `next` 연결을 어떻게 바꾸는지가 중요하다.
+
+* Node를 삭제한 뒤 현재 Pointer를 이동할지 유지할지 판단해야 한다.
+
+* `nullptr` 검사는 무조건 넣는 것이 아니라 Pointer가 유효한지 논리적으로 판단한다.
+
+* LeetCode 및 일반 코테에서는 입력으로 주어진 Node의 메모리 소유권이 채점 환경에 있을 수 있으므로,    특별한 요구가 없다면 직접 delete하지 않고 연결만 수정한다.
+
+* 따라서 내가 직접 할당한 메모리는 내가 해제하고, 문제에서 받은 Node는 소유권이 명확하지 않으면 임의로 해제하지 않는다.
+
+* 노드 삭제 문제에서는 **"Node를 제거한 뒤 Pointer를 이동할 것인지 유지할 것인지 판단하는 것"**이 중요하다.
+
+**### 복잡도**
+
+* **시간복잡도(Time Complexity / 时间复杂度): `O(n)`**
+
+* **공간복잡도(Space Complexity / 空间复杂度): `O(1)`**
