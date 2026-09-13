@@ -321,3 +321,122 @@ while (cur->next)
 * **시간복잡도(Time Complexity / 时间复杂度): `O(n)`**
 
 * **공간복잡도(Space Complexity / 空间复杂度): `O(1)`**
+
+
+# 0203. Remove Linked List Elements (26.9.13)
+
+### 유형
+
+* Linked List(链表)
+* Pointer Manipulation(指针操作)
+* Iteration(迭代)
+* Dummy Node(哑节点)
+
+### 풀이
+
+* 삭제 대상이 `head`에 연속해서 존재할 수 있으므로, 먼저 `head->val == val`인 동안 `head`를 이동시키는 방법으로 처리할 수 있다.
+* 이후 `cur`와 `cur->next`를 이용해 `cur->next->val == val`이면 해당 Node를 건너뛰도록 연결을 수정한다.
+* Node를 삭제한 경우에는 `cur`를 이동하지 않고 새롭게 연결된 `cur->next`를 다시 검사한다.
+* 값이 다를 때만 `cur = cur->next`로 이동한다.
+* 또는 `dummy node`를 `head` 앞에 두면 `head` 삭제를 별도로 처리하지 않고 모든 Node를 동일한 방식으로 삭제할 수 있다.
+
+### 헷갈렸던 부분
+
+* 반복 조건을 처음에 다음과 같이 잘못 작성했다.
+
+```cpp
+while (!cur->next)
+```
+
+* `!cur->next`는 `cur->next == nullptr`이라는 뜻이므로, 다음 Node가 존재할 때 순회하려면 다음과 같이 작성해야 한다.
+
+```cpp
+while (cur->next)
+```
+
+* `cur`는 `head`를 복사한 Pointer이지만:
+
+```cpp
+cur->next = cur->next->next;
+```
+
+처럼 `cur`가 가리키는 실제 Node의 `next` 값을 변경하면 원본 Linked List의 연결도 변경된다.
+
+* 다음과 같이 연속된 삭제 대상이 있을 수 있다.
+
+```text
+1 → 6 → 6 → 6 → 2
+↑
+cur
+```
+
+* 첫 번째 `6`을 삭제하면:
+
+```text
+1 → 6 → 6 → 2
+↑
+cur
+```
+
+가 되므로 삭제 후 `cur`를 이동하면 안 된다.
+
+따라서:
+
+```text
+삭제 대상
+→ cur->next 삭제
+→ cur 유지
+
+삭제 대상 아님
+→ cur 이동
+```
+
+* 일반적인 Node 삭제는 이전 Node의 `next`를 변경하면 되지만, `head` 자체가 삭제 대상이면 앞에 Node가 없기 때문에 별도 처리가 필요하다.
+
+```text
+head
+ ↓
+6 → 1 → 2
+```
+
+* 이를 해결하는 대표적인 방법은 두 가지다.
+
+```text
+1. head가 val인 동안 head를 먼저 이동한다.
+2. head 앞에 dummy node를 추가한다.
+```
+
+* `dummy node`를 사용하면:
+
+```text
+dummy
+ ↓
+0 → 6 → 1 → 2
+↑
+cur
+```
+
+첫 실제 Node도 항상 `cur->next`가 되므로:
+
+```cpp
+cur->next = cur->next->next;
+```
+
+라는 동일한 로직으로 삭제할 수 있다.
+
+### 배운 점
+
+* Linked List에서 Node 삭제는 실제 Node 값을 지우는 것보다 `next` 연결을 변경하는 것이 핵심이다.
+* Pointer 자체를 복사해도 해당 Pointer가 가리키는 Node를 수정하면 원본 Linked List가 변경된다.
+* Node를 삭제한 뒤 현재 Pointer를 이동할지 유지할지 반드시 판단해야 한다.
+* 연속해서 삭제해야 하는 Node가 존재할 수 있으므로, 삭제한 경우에는 현재 Pointer를 유지하고 새로운 `next`를 다시 검사해야 한다.
+* `head`는 다른 Node와 달리 이전 Node가 없기 때문에 삭제 시 예외 처리가 발생할 수 있다.
+* `dummy node`를 사용하면 `head` 삭제를 포함한 모든 Node를 동일한 방식으로 처리할 수 있어 코드가 단순해진다.
+* 따라서 **head가 변경될 가능성이 있는 Linked List 문제에서는 dummy node 사용을 먼저 고려할 수 있다.**
+* 재귀(递归) 방식으로도 해결할 수 있지만 호출 스택 때문에 공간복잡도가 `O(n)`이 된다.
+* 이 문제에서는 반복(迭代) + dummy node 방식이 `O(1)` 추가 공간으로 해결할 수 있어 코딩테스트 관점에서는 더 적합하다.
+
+### 복잡도
+
+* **시간복잡도(Time Complexity / 时间复杂度): `O(n)`**
+* **공간복잡도(Space Complexity / 空间复杂度): `O(1)`**
