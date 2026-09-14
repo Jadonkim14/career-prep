@@ -873,3 +873,332 @@ Linked List
 ```
 
 결국 Machine-Level에서 **Array, Struct, Matrix, Linked List는 모두 주소 계산 + Memory Access 문제**이다.
+
+
+## 3.5 Machine Prog: Advanced
+
+### 1. Structure Alignment
+
+구조체 member는 각 자료형의 **Alignment(对齐)** 조건을 맞추기 위해 중간에 **Padding(填充)** 이 들어갈 수 있다.
+
+```c
+struct S1 {
+    char c;
+    int i[2];
+    double v;
+};
+```
+
+x86-64 기준:
+
+```text
+c       → offset 0
+padding → 1~3
+i[0]    → 4
+i[1]    → 8
+padding → 12~15
+v       → 16~23
+```
+
+```text
+sizeof(struct S1) = 24
+```
+
+구조체 전체 크기는 **가장 큰 alignment의 배수**가 된다.
+
+---
+
+### 2. Array of Structures
+
+```c
+struct S3 {
+    short i;
+    float v;
+    short j;
+} a[10];
+```
+
+```text
+sizeof(struct S3) = 12
+j offset = 8
+```
+
+따라서:
+
+```text
+&a[idx].j
+= base + idx × 12 + 8
+```
+
+Machine-Level에서는 결국 **주소 계산**이다.
+
+---
+
+### 3. Saving Space
+
+member 순서에 따라 padding 크기가 달라진다.
+
+```c
+struct S4 {
+    char c;
+    int i;
+    char d;
+};
+```
+
+```text
+sizeof = 12
+```
+
+반면:
+
+```c
+struct S5 {
+    int i;
+    char c;
+    char d;
+};
+```
+
+```text
+sizeof = 8
+```
+
+보통 alignment가 큰 자료형을 먼저 배치하면 padding을 줄일 수 있다.
+
+---
+
+### 4. Union
+
+`union(联合体)`은 모든 member가 **같은 memory를 공유**한다.
+
+```c
+union U1 {
+    char c;
+    int i[2];
+    double v;
+};
+```
+
+```text
+sizeof(union U1) = 가장 큰 member 크기 = 8
+```
+
+`struct`는 member마다 별도 공간을 사용하지만, `union`은 같은 공간을 여러 type으로 해석한다.
+
+---
+
+### 5. Union and Bit Pattern
+
+```c
+union {
+    float f;
+    unsigned u;
+} x;
+
+x.f = 1.0f;
+```
+
+```text
+x.f → 1.0
+x.u → 1065353216
+     → 0x3F800000
+```
+
+반면:
+
+```c
+(unsigned)x.f
+```
+
+는 값 변환이므로:
+
+```text
+1
+```
+
+이다.
+
+```text
+Cast  → Value Conversion
+Union → Same Bits, Different Interpretation
+```
+
+---
+
+### 6. Endianness
+
+Multi-byte data의 byte 저장 순서.
+
+```text
+Big Endian
+→ MSB가 낮은 주소
+
+Little Endian
+→ LSB가 낮은 주소
+```
+
+x86 / x86-64는 Little Endian.
+
+예:
+
+```text
+Memory:
+12 34 56 78
+```
+
+Little Endian에서 32-bit 정수로 읽으면:
+
+```text
+0x78563412
+```
+
+---
+
+### 7. Memory Layout
+
+프로그램 메모리는 개념적으로:
+
+```text
+High Address
+
+Stack
+Heap
+Data
+Text
+
+Low Address
+```
+
+```text
+Text  → Machine Code
+Data  → Global / Static Variable
+Heap  → malloc / calloc
+Stack → Local Variable / Function Call
+```
+
+예:
+
+```c
+int *p = malloc(sizeof(int));
+```
+
+함수 내부라면:
+
+```text
+p 자체 → Stack
+p가 가리키는 memory → Heap
+```
+
+---
+
+### 8. Buffer Overflow
+
+C 배열에는 자동 **Bounds Checking(边界检查)** 이 없다.
+
+```c
+char buf[4];
+gets(buf);
+```
+
+입력이 너무 길면:
+
+```text
+Buffer
+↓
+Saved Register
+↓
+Frame Pointer
+↓
+Return Address
+```
+
+까지 덮어쓸 수 있다.
+
+```text
+Buffer Overflow
+→ Memory Corruption
+→ Control Flow Corruption 가능
+```
+
+---
+
+### 9. Protection
+
+#### Safe Input
+
+```c
+fgets(buf, sizeof(buf), stdin);
+```
+
+처럼 입력 크기를 제한한다.
+
+#### ASLR
+
+```text
+실행할 때마다 Memory Address를 변경
+→ 공격자가 주소 예측하기 어려움
+```
+
+#### Non-Executable Memory
+
+```text
+Stack / Heap → RW-
+Text         → R-X
+```
+
+데이터 영역의 byte를 코드처럼 실행하지 못하게 한다.
+
+#### Stack Canary
+
+```text
+Return Address
+Saved Frame
+Canary
+Buffer
+```
+
+함수 종료 전 Canary 값이 변했는지 검사한다.
+
+```text
+같음 → 정상 return
+다름 → stack corruption 감지
+```
+
+---
+
+### 10. Worm vs Virus
+
+```text
+Worm
+→ 독립 실행 가능
+→ 자기 자신을 다른 시스템으로 전파
+
+Virus
+→ 다른 프로그램에 붙음
+→ 독립 실행 불가
+```
+
+---
+
+### 최종 핵심
+
+```text
+Struct
+→ Alignment / Padding
+
+Union
+→ Same Memory, Different Interpretation
+
+Endianness
+→ Byte Ordering
+
+Memory Layout
+→ Text / Data / Heap / Stack
+
+Buffer Overflow
+→ Memory Corruption
+
+Protection
+→ Bounds Check / ASLR / NX / Canary
+```

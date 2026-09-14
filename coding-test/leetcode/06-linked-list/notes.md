@@ -440,3 +440,40 @@ cur->next = cur->next->next;
 
 * **시간복잡도(Time Complexity / 时间复杂度): `O(n)`**
 * **공간복잡도(Space Complexity / 空间复杂度): `O(1)`**
+
+
+# Linked List 최종 요약
+
+핵심: **값이 아니라 `next` 연결을 조작하는 것** 
+
+* **Reverse Linked List**
+  `prev / cur / next`
+  → `next`를 먼저 저장하고 연결을 뒤집음
+  → 마지막에는 `return prev`
+
+* **Merge Two Sorted Lists**
+  `Dummy + cur`
+  → 작은 노드를 연결한 뒤 반드시 `cur = cur->next`
+  → 마지막 `return dummy.next`
+
+* **Cycle / Middle**
+  `Slow / Fast Pointer`
+  → 속도 차이로 Cycle 탐지, 중간 노드 탐색
+
+* **Remove Duplicates**
+  중복 삭제 후 `cur` 유지
+  → 연속 중복을 다시 검사해야 함
+
+* **Remove Elements**
+  `head`가 삭제될 수 있으므로 Dummy가 유용
+  → 삭제 후에도 `cur` 유지 가능
+
+### 기억할 기준
+
+```text
+연결 반전 → prev / cur / next
+첫 노드 예외 처리 → dummy 고려
+위치 탐색 → two pointers
+삭제 문제 → 삭제 후 cur 이동 여부 판단
+항상 nullptr 역참조 확인
+```
