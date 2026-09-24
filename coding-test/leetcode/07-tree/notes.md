@@ -219,3 +219,73 @@ if ((right1 == nullptr) ^ (right2 == nullptr))
 * DFS 공간복잡도: `O(height)`
 * BFS 시간복잡도: `O(n)`
 * BFS 공간복잡도: `O(n)`
+
+
+# 0226. Invert Binary Tree (26.9.24)
+
+### 유형
+
+* Tree(树)
+
+* DFS(深度优先搜索)
+
+* BFS(广度优先搜索)
+
+* Recursion(递归)
+
+### 풀이
+
+* 현재 Node의 왼쪽/오른쪽 Child를 서로 교환한다.
+
+* 이후 왼쪽 Subtree와 오른쪽 Subtree에도 같은 작업을 반복한다.
+
+* Leaf Node의 경우 `left`, `right`가 둘 다 `nullptr`이어도 교환이 가능하므로 따로 처리할 필요가 없다.
+
+### 내 코드 개선 과정
+
+* 처음에는 Child의 존재 여부에 따라 여러 경우로 나누었다.
+
+```text
+둘 다 nullptr
+왼쪽만 nullptr
+오른쪽만 nullptr
+둘 다 존재
+```
+
+* 하지만 `nullptr`도 Pointer 값이므로 `left`와 `right`를 그대로 교환할 수 있다.
+
+* 또한 재귀 함수의 Base Case에서 `nullptr`을 처리하므로 재귀 호출 전에 Child가 존재하는지 확인할 필요도 없다.
+
+### BFS 풀이
+
+* Queue를 이용해 Tree의 모든 Node를 순서대로 방문한다.
+
+* 현재 Node를 Queue에서 꺼낸 뒤 왼쪽/오른쪽 Child를 교환한다.
+
+* 교환한 후 존재하는 Child를 다시 Queue에 넣는다.
+
+* 이 문제에서는 Level별 결과를 따로 구분할 필요가 없기 때문에 `q.size()`를 이용한 Level Size 저장이 필요하지 않다.
+
+### 배운 점
+
+* Tree 재귀에서는 `nullptr`을 Base Case에서 처리하면 호출 전에 불필요한 조건 검사를 줄일 수 있다.
+
+* Leaf Node의 `left`, `right`가 둘 다 `nullptr`이어도 `swap`은 정상적으로 동작한다.
+
+* Tree 전체에 동일한 작업을 적용할 때 DFS 재귀를 사용할 수 있다.
+
+* BFS에서는 Queue를 이용해 모든 Node를 방문하면서 같은 작업을 수행할 수 있다.
+
+* BFS라고 해서 항상 Level Size가 필요한 것은 아니다.
+
+* Level별 처리가 필요한 문제에서만 `q.size()`를 이용해 Level을 구분하면 된다.
+
+### 복잡도
+
+* DFS 시간복잡도: `O(n)`
+
+* DFS 공간복잡도: `O(height)`
+
+* BFS 시간복잡도: `O(n)`
+
+* BFS 공간복잡도: `O(n)`
