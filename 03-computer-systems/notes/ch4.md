@@ -1201,3 +1201,441 @@ New State
 > **Logic Design의 핵심은
 > Combinational Logic으로 값을 계산하고,
 > Sequential Logic으로 State를 저장하는 구조를 이해하는 것이다.**
+
+## 4.3 Sequential Implementation
+
+### 1. SEQ 기본 구조
+
+Y86-64 Instruction은 공통적으로 다음 단계를 따른다.
+
+```text
+Fetch
+→ Decode
+→ Execute
+→ Memory
+→ Write Back
+→ PC Update
+```
+
+Instruction마다 구조가 달라지는 것이 아니라, **각 Stage에서 어떤 값과 Hardware를 사용하는지가 달라진다.**
+
+---
+
+### 2. 주요 Signal
+
+```text
+valA, valB
+→ Register File에서 읽은 값
+
+valC
+→ Instruction 내부의 Constant / Destination / Displacement
+
+valP
+→ 다음 순차 Instruction 주소
+
+valE
+→ ALU 결과
+
+valM
+→ Memory에서 읽은 값
+```
+
+Register 선택 Signal:
+
+```text
+srcA, srcB
+→ 읽을 Register
+
+dstE
+→ valE를 저장할 Register
+
+dstM
+→ valM을 저장할 Register
+```
+
+`F(0xF)`는 **No Register**를 의미한다.
+
+---
+
+### 3. Fetch
+
+Fetch에서는 PC를 이용해 Instruction을 읽고 다음 정보를 추출한다.
+
+```text
+icode / ifun
+rA / rB
+valC
+valP
+```
+
+Control Logic:
+
+```text
+need_regids
+→ Register Byte 필요 여부
+
+need_valC
+→ 8-byte Constant 필요 여부
+
+instr_valid
+→ 유효한 Instruction인지 확인
+```
+
+`valP`:
+
+```text
+valP = PC + Instruction Length
+```
+
+---
+
+### 4. Decode
+
+Register File에서 operand를 읽는다.
+
+```text
+srcA → valA
+srcB → valB
+```
+
+Register File은:
+
+```text
+Read
+→ Combinational
+
+Write
+→ Clock Rising Edge
+```
+
+예:
+
+```asm
+addq %rax, %rbx
+```
+
+```text
+srcA = %rax
+srcB = %rbx
+dstE = %rbx
+dstM = F
+```
+
+---
+
+### 5. Execute
+
+ALU가 연산, 주소 계산, Stack Pointer 계산 등을 수행한다.
+
+```text
+aluA
+aluB
+alufun
+↓
+ALU
+↓
+valE
+```
+
+`OPq`:
+
+```text
+valE = valB OP valA
+```
+
+Memory Address 계산:
+
+```text
+valE = valB + valC
+```
+
+Stack:
+
+```text
+pushq / call
+→ %rsp - 8
+
+popq / ret
+→ %rsp + 8
+```
+
+`OPq`는 `ifun`으로 ADD/SUB/AND/XOR를 선택하고,
+대부분의 다른 Instruction은 `ALUADD`를 사용한다.
+
+---
+
+### 6. Condition Code
+
+ALU는 필요할 경우:
+
+```text
+ZF
+SF
+OF
+```
+
+를 계산한다.
+
+```text
+Set CC = 1
+→ Condition Code 갱신
+```
+
+Conditional Move에서 조건이 거짓이면:
+
+```text
+dstE = F
+```
+
+로 만들어 Register Write를 취소한다.
+
+---
+
+### 7. Memory
+
+Memory 접근 여부와 주소를 Control Logic이 결정한다.
+
+Memory Read:
+
+```text
+mrmovq
+popq
+ret
+```
+
+Memory Write:
+
+```text
+rmmovq
+pushq
+call
+```
+
+주소:
+
+```text
+rmmovq / mrmovq / pushq / call
+→ mem_addr = valE
+
+popq / ret
+→ mem_addr = valA
+```
+
+`popq`, `ret`은 **old %rsp 위치를 읽어야 하므로 `valA`를 사용**한다.
+
+---
+
+### 8. Stack Instruction
+
+#### `pushq`
+
+```text
+valE = %rsp - 8
+Memory[valE] = valA
+%rsp = valE
+```
+
+#### `popq`
+
+```text
+valA = old %rsp
+valE = old %rsp + 8
+valM = Memory[valA]
+
+%rsp = valE
+rA = valM
+```
+
+```text
+valE
+→ 새로운 %rsp
+
+valM
+→ Stack에서 꺼낸 데이터
+```
+
+---
+
+### 9. `call` / `ret`
+
+#### `call Dest`
+
+```text
+valC = Dest
+valP = Return Address
+
+valE = %rsp - 8
+Memory[valE] = valP
+%rsp = valE
+
+PC = valC
+```
+
+```text
+valP
+→ 나중에 돌아올 주소
+
+valC
+→ 지금 이동할 함수 주소
+```
+
+#### `ret`
+
+```text
+valA = old %rsp
+valE = old %rsp + 8
+valM = Memory[valA]
+
+%rsp = valE
+PC = valM
+```
+
+`valM`은 Stack에서 읽은 **Return Address**이다.
+
+---
+
+### 10. Jump
+
+조건 Jump:
+
+```text
+Cnd = Cond(CC, ifun)
+```
+
+다음 PC:
+
+```text
+Cnd = 1
+→ PC = valC
+
+Cnd = 0
+→ PC = valP
+```
+
+즉:
+
+```text
+PC = Cnd ? valC : valP
+```
+
+MUX가 실제 CPU Control에 사용되는 대표적인 예이다.
+
+---
+
+### 11. PC Update
+
+```text
+일반 Instruction
+→ PC = valP
+
+call
+→ PC = valC
+
+Taken Jump
+→ PC = valC
+
+ret
+→ PC = valM
+```
+
+---
+
+### 12. Processor Status
+
+```text
+SAOK
+→ 정상
+
+SHLT
+→ halt
+
+SADR
+→ Memory Address Error
+
+SINS
+→ Invalid Instruction
+```
+
+---
+
+### 13. Clock과 State Update
+
+SEQ는 다음 구조로 동작한다.
+
+```text
+Current State
+→ Combinational Logic
+→ Next State 계산
+→ Clock Rising Edge
+→ New State
+```
+
+Clock Rising Edge에서 갱신되는 주요 State:
+
+```text
+PC
+Register File
+Condition Codes
+Data Memory
+```
+
+중간 계산값이 즉시 State를 바꾸는 것이 아니라, **Rising Edge에서 한 번에 갱신**된다.
+
+---
+
+### 14. SEQ의 한계
+
+SEQ는 **한 Instruction을 한 Clock Cycle 안에 전부 실행**한다.
+
+```text
+Instruction Memory
+↓
+Register File
+↓
+ALU
+↓
+Data Memory
+```
+
+가장 오래 걸리는 Instruction의 전체 경로가 **Critical Path**가 된다.
+
+따라서:
+
+```text
+긴 Critical Path
+→ 긴 Clock Period
+→ 낮은 Clock Frequency
+→ 낮은 성능
+```
+
+또한 한 Instruction이 모든 Hardware를 항상 사용하는 것이 아니므로 Hardware가 쉬는 시간도 많다.
+
+---
+
+### 핵심 흐름
+
+```text
+Instruction
+↓
+Fetch
+↓
+Decode
+↓
+Execute
+↓
+Memory
+↓
+Write Back
+↓
+PC Update
+↓
+Clock Rising Edge
+↓
+New State
+```
+
+SEQ의 핵심 문제:
+
+> **Instruction 전체를 한 Cycle 안에 끝내야 하므로 Clock을 가장 긴 Critical Path에 맞춰야 한다.**
+
+이 한계를 해결하기 위해 다음 단계에서 **Pipelining**을 사용한다.
