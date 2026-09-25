@@ -41,15 +41,17 @@ Dump of assembler code for function touch1:
 
 ### 풀이
 
+```text
 낮은 주소
 ┌─────────────────┐
 │ buf[0]          │ ← %rsp
 │ ...             │
 │ buf[39]         │
 ├─────────────────┤
-│ return address  │ ← touch1()으로 덮어써야 함.
+│ return address  │ ← touch1()으로 덮어써야 함
 └─────────────────┘
 높은 주소
+```
 
 ctarget-p1.txt
 
@@ -108,15 +110,18 @@ End of assembler dump.
 
 ### 풀이
 
+```text
 낮은 주소
 ┌─────────────────┐
-│ buf[0]          │ ← touch2 첫 번째 인자 레지스터(%rdi) 주어진 쿠키로 변경
+│ buf[0]          │ ← touch2 첫 번째 인자 레지스터(%rdi)를
+│                 │   주어진 쿠키 값으로 변경
 │ ...             │ ← touch2 함수의 시작 주소를 스택에 push
 │ buf[39]         │ ← 위 주소로 ret
 ├─────────────────┤
 │ return address  │ ← (1) buf[0]으로 이동
 └─────────────────┘
 높은 주소
+```
 
 * modandjump.s
 movq $0x59b997fa, %rdi
