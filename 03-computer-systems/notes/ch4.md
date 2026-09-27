@@ -1639,3 +1639,430 @@ SEQ의 핵심 문제:
 > **Instruction 전체를 한 Cycle 안에 끝내야 하므로 Clock을 가장 긴 Critical Path에 맞춰야 한다.**
 
 이 한계를 해결하기 위해 다음 단계에서 **Pipelining**을 사용한다.
+
+
+## 4.4 Pipelined Implementation
+
+### 4.4.1 파이프라이닝의 기본 개념
+
+파이프라이닝(Pipelining, 流水线)은 명령어 처리를 여러 **Stage(阶段)** 로 나누고, 여러 명령어를 서로 다른 Stage에서 동시에 처리하는 방식이다.
+
+핵심 목적은 **Latency 감소가 아니라 Throughput(吞吐量) 증가**이다.
+
+예를 들어 조합 논리 `300 ps`와 Register Overhead `20 ps`가 있다면:
+
+$$
+T_{clock} = 300 + 20 = 320\text{ ps}
+$$
+
+$$
+Throughput \approx 3.12\text{ GIPS}
+$$
+
+이를 3개의 `100 ps` Stage로 나누면:
+
+$$
+T_{clock} = 100 + 20 = 120\text{ ps}
+$$
+
+$$
+Throughput \approx 8.33\text{ GIPS}
+$$
+
+하지만 하나의 연산이 3개의 Stage를 모두 통과하는 Latency는:
+
+$$
+Latency = 120 \times 3 = 360\text{ ps}
+$$
+
+즉, **개별 작업은 더 빨라지지 않아도 전체 처리량은 증가할 수 있다.**
+
+---
+
+### 4.4.2 Pipeline의 한계
+
+Clock Cycle은 **가장 느린 Stage의 Delay + Register Overhead**에 의해 결정된다.
+
+$$
+T_{clock} = \max(\text{Stage Delay}) + \text{Register Overhead}
+$$
+
+따라서 Stage 간 Delay가 불균형하면 빠른 Stage에서 대기 시간이 발생한다.
+
+또한 Pipeline을 너무 잘게 나누면 각 Stage의 Logic Delay는 감소하지만 **Register Overhead의 비중은 증가**한다.
+
+---
+
+### 4.4.3 5-Stage Pipeline
+
+Y86-64 PIPE는 명령어 실행을 다음 5단계로 나눈다.
+
+| Stage | 역할 |
+|---|---|
+| **F - Fetch (取指)** | 명령어 읽기 및 PC 계산 |
+| **D - Decode (译码)** | Register 읽기 |
+| **E - Execute (执行)** | ALU 연산 |
+| **M - Memory (访存)** | Memory 읽기/쓰기 |
+| **W - Write Back (写回)** | Register 갱신 |
+
+```text
+I1: F → D → E → M → W
+I2:     F → D → E → M → W
+I3:         F → D → E → M → W
+```
+
+각 Stage 사이에는 **Pipeline Register**가 존재하여 중간 결과를 저장한다.
+
+Signal 표기법:
+
+- `S_Field`: Stage S의 Pipeline Register에 저장된 값
+- `s_Field`: Stage S에서 현재 계산된 값
+
+예:
+
+$$
+e\_valE \rightarrow M\_valE
+$$
+
+즉 `e_valE`는 Execute Stage에서 현재 계산된 값이고, 다음 Clock 이후 `M_valE`로 저장된다.
+
+---
+
+### 4.4.4 Data Hazard
+
+한 명령어가 Register에 값을 쓰고 다음 명령어가 그 값을 읽는 대표적인 의존성이 **RAW (Read After Write)** 이다.
+
+```asm
+irmovq $50, %rax      # Write %rax
+addq   %rax, %rbx     # Read %rax
+```
+
+관계는 다음과 같다.
+
+```text
+WRITE %rax
+    ↓
+READ %rax
+    ↓
+RAW Dependency
+```
+
+Pipeline에서는 앞 명령어가 아직 Write Back을 하지 않았는데 뒤 명령어가 Decode에서 Register를 읽으면 **오래된 값**을 읽을 수 있다.
+
+이를 **Data Hazard(数据冒险)** 라고 한다.
+
+올바른 값이 `M_valE`, `e_valE` 등에 이미 존재하더라도 Register File에는 아직 반영되지 않았을 수 있다.
+
+`nop`을 삽입하여 명령어 사이의 간격을 벌리면 문제를 피할 수 있지만 성능이 감소한다.
+
+---
+
+### 4.4.5 PC Prediction과 Control Hazard
+
+Pipeline은 매 Clock Cycle마다 새로운 명령어를 Fetch해야 하므로 **다음 PC를 미리 예측**한다.
+
+| Instruction | Predicted PC |
+|---|---|
+| 일반 명령어 | `valP` |
+| `call`, Unconditional Jump | `valC` |
+| Conditional Jump | `valC` (Taken 예측) |
+| `ret` | 예측하지 않음 |
+
+Conditional Branch에서:
+
+- **Taken**: Branch Target으로 이동
+- **Not Taken**: 바로 다음 명령어인 **Fall-through**로 진행
+
+예측과 실제 결과가 다르면:
+
+```text
+Branch
+  │
+  ├─ 예측 경로 → 잘못 Fetch한 명령어 → 폐기
+  │
+  └─ 실제 경로 → 올바른 PC에서 다시 Fetch
+```
+
+이러한 문제를 **Control Hazard(控制冒险)** 라고 한다.
+
+---
+
+### 4.4.6 핵심 정리
+
+```text
+Pipelining
+│
+├─ 목적: Throughput 증가
+│
+├─ 5 Stages
+│   └─ F → D → E → M → W
+│
+├─ Data Dependency
+│   └─ RAW → Data Hazard
+│
+└─ Control Dependency
+    ├─ Branch Misprediction
+    └─ Return
+        ↓
+      Control Hazard
+```
+
+핵심은 다음과 같다.
+
+> **Pipeline은 여러 명령어를 동시에 처리하여 Throughput을 높이지만, 명령어 간 Data Dependency와 Control Dependency로 인해 Hazard가 발생할 수 있다.**
+
+좋아. 네가 작성한 **4.4.5 → 4.4.6 뒤에 그대로 붙일 수 있는 형태**로 이번 Part II PPT를 정리하면 아래가 적당해. PPT의 순서인 **Stalling → Forwarding → Load/Use → Control Hazard → Control Combination**을 유지할게. :chatgpt-content-reference{index="0"}
+
+### 4.4.7 Data Hazard와 Stalling
+
+앞선 명령어가 Register에 값을 쓰고, 뒤따르는 명령어가 그 Register를 Source로 사용하면 **Data Hazard(数据冒险)** 가 발생할 수 있다.
+
+가장 단순한 해결 방법은 **Stall(停顿)** 이다.
+
+```text
+Stall 발생
+│
+├─ Fetch  → 현재 상태 유지
+├─ Decode → 현재 Instruction 유지
+└─ Execute → Bubble 삽입
+```
+
+- **Stall**: 올바른 Instruction을 현재 Stage에 유지
+- **Bubble**: Pipeline에 동적으로 삽입되는 `nop`과 같은 상태
+
+즉, 필요한 값이 준비될 때까지 Consumer Instruction을 Decode에서 기다리게 하고 Execute에는 Bubble을 삽입한다. :chatgpt-content-reference{index="1"}
+
+Pipeline Register는 다음 세 가지 방식으로 동작한다.
+
+| Mode | 동작 |
+|---|---|
+| Normal | 다음 값을 정상적으로 저장 |
+| Stall | 현재 값을 그대로 유지 |
+| Bubble | `nop` 상태를 저장 |
+
+Pipeline Control Logic이 Hazard를 감지하여 각 Pipeline Register의 동작을 결정한다. :chatgpt-content-reference{index="2"}
+
+---
+
+### 4.4.8 Data Forwarding
+
+모든 Data Hazard를 Stall로 해결하면 Pipeline 성능이 크게 떨어진다.
+
+따라서 **Data Forwarding(数据转发)** 을 사용한다.
+
+```text
+값을 생성한 Instruction
+        │
+        ├─ E
+        ├─ M
+        └─ W
+        │
+        ↓
+Decode Stage에서 직접 사용
+```
+
+Register File에 Write Back될 때까지 기다리지 않고, Pipeline 내부에 이미 존재하는 값을 필요한 Instruction으로 직접 전달한다.
+
+Forwarding Source는 다음과 같다.
+
+- Execute: `valE`
+- Memory: `valE`, `valM`
+- Write Back: `valE`, `valM`
+
+:chatgpt-content-reference{index="3"} :chatgpt-content-reference{index="4"}
+
+여러 Stage에서 같은 Register에 대한 Forwarding 후보가 존재한다면 **Program의 순차 실행 결과와 동일하도록 가장 최근 값을 선택**해야 한다. PPT에서는 이를 위해 가장 앞쪽 Pipeline Stage의 일치하는 값을 우선 사용한다. :chatgpt-content-reference{index="5"}
+
+---
+
+### 4.4.9 Load/Use Hazard
+
+Forwarding으로도 해결할 수 없는 대표적인 경우가 **Load/Use Hazard**이다.
+
+```asm
+mrmovq 0(%rax), %rdx
+addq   %rdx, %rbx
+```
+
+`mrmovq`가 Memory에서 읽은 값은 **Memory Stage에서야 준비**되지만, 바로 뒤의 `addq`는 그 값을 더 일찍 필요로 한다.
+
+따라서 Forwarding만으로 해결할 수 없다. :chatgpt-content-reference{index="6"}
+
+해결 방법은:
+
+```text
+Load
+ ↓
+1 Cycle Stall
+ ↓
+Memory에서 값 생성
+ ↓
+Forwarding
+ ↓
+Use
+```
+
+즉 **1 Cycle Stall + Forwarding**을 사용한다.
+
+Load/Use Hazard 발생 시:
+
+```text
+F → Stall
+D → Stall
+E → Bubble
+M → Normal
+W → Normal
+```
+
+Load Instruction은 계속 진행시키면서 Consumer Instruction을 Decode에서 한 Cycle 기다리게 한다. :chatgpt-content-reference{index="7"}
+
+---
+
+### 4.4.10 Branch Misprediction 처리
+
+PIPE는 Conditional Branch를 기본적으로 **Taken으로 예측**한다.
+
+실제 결과가 Not Taken이면 Branch Target에서 가져온 Instruction들은 잘못된 경로의 Instruction이다.
+
+```text
+Branch
+ │
+ ├─ Predicted Taken
+ │      ↓
+ │   Target Fetch
+ │      ↓
+ │   Prediction 실패
+ │
+ └─ Wrong-path Instructions
+          ↓
+        Bubble
+```
+
+Misprediction을 감지하면 잘못 Fetch된 Instruction을 **Bubble로 교체하여 취소**한다. 이 시점에는 해당 Instruction들이 아직 부작용을 발생시키지 않았기 때문에 안전하게 제거할 수 있다. :chatgpt-content-reference{index="8"}
+
+PPT의 Control은 다음과 같다.
+
+```text
+F → Normal
+D → Bubble
+E → Bubble
+M → Normal
+W → Normal
+```
+
+Branch Misprediction으로 인해 **2 Clock Cycles의 손실**이 발생한다. :chatgpt-content-reference{index="9"} :chatgpt-content-reference{index="10"}
+
+---
+
+### 4.4.11 `ret` Control Hazard
+
+`ret`은 Conditional Branch와 다른 문제가 있다.
+
+Conditional Branch는 Branch Target을 알고 있기 때문에 다음 PC를 예측할 수 있지만, `ret`의 Return Address는 **Stack에서 읽어야 한다.**
+
+따라서 Return Address가 준비될 때까지 Fetch를 진행할 수 없다.
+
+```text
+ret
+ │
+ ├─ D
+ ├─ E        → Fetch Stall
+ ├─ M
+ │
+ └─ W
+     ↓
+Return Address 준비
+     ↓
+Fetch 재개
+```
+
+`ret`이 Decode, Execute, Memory Stage를 통과하는 동안 **Fetch를 Stall**하고 Decode에는 Bubble을 삽입한다. Write Back Stage에 도달하면 Stall을 해제한다. :chatgpt-content-reference{index="11"}
+
+```text
+F → Stall
+D → Bubble
+E → Normal
+M → Normal
+W → Normal
+```
+
+이 과정에서 **3 Clock Cycles의 손실**이 발생한다. :chatgpt-content-reference{index="12"} :chatgpt-content-reference{index="13"}
+
+---
+
+### 4.4.12 Multiple Hazards와 Pipeline Control
+
+실제 Pipeline에서는 여러 Hazard가 **같은 Clock Cycle에 동시에 발생**할 수 있다.
+
+대표적인 경우가:
+
+```text
+Load/Use Hazard
+      +
+     ret
+```
+
+이다.
+
+각각 따로 처리하면:
+
+```text
+Load/Use → D = Stall
+ret      → D = Bubble
+```
+
+가 되어 같은 Pipeline Register에 **Stall과 Bubble이 동시에 요구되는 충돌**이 발생한다. PPT에서는 이러한 조합이 초기 Control Logic에서 Pipeline Error를 발생시킨다고 설명한다. :chatgpt-content-reference{index="14"}
+
+이를 해결하기 위해 **Load/Use Hazard에 우선순위**를 준다.
+
+```text
+Load/Use + ret
+       ↓
+Load/Use 우선
+       ↓
+F → Stall
+D → Stall
+E → Bubble
+M → Normal
+W → Normal
+```
+
+따라서 `ret`을 제거하지 않고 Decode Stage에서 한 Cycle 더 유지한다. :chatgpt-content-reference{index="15"}
+
+Control Logic에서는 `ret`으로 `D_bubble`을 발생시키기 전에 **Load/Use Hazard가 아닌지 확인**하도록 조건을 수정한다. :chatgpt-content-reference{index="16"}
+
+---
+
+### 4.4.13 Pipelined Implementation 최종 정리
+
+```text
+Pipeline Hazard
+│
+├─ Data Hazard
+│   │
+│   ├─ 일반적인 Dependency
+│   │      └─ Forwarding
+│   │          → Performance Penalty 없음
+│   │
+│   └─ Load/Use Hazard
+│          └─ 1 Cycle Stall + Forwarding
+│
+└─ Control Hazard
+    │
+    ├─ Branch Misprediction
+    │      └─ Wrong-path → Bubble
+    │          → 2 Cycles 손실
+    │
+    └─ ret
+           └─ Fetch Stall
+               → 3 Cycles 손실
+
+Multiple Hazards
+└─ 동시에 발생할 수 있음
+    └─ Control Priority 필요
+```
+
+핵심은 다음과 같다.
+
+> **Pipeline의 Hazard 처리는 Forwarding, Stall, Bubble을 적절히 조합하는 문제이며, 여러 Hazard가 동시에 발생하는 경우까지 고려하여 Pipeline Control Logic을 설계해야 한다.**
+
