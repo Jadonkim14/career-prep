@@ -289,3 +289,114 @@ if ((right1 == nullptr) ^ (right2 == nullptr))
 * BFS 시간복잡도: `O(n)`
 
 * BFS 공간복잡도: `O(n)`
+
+# 0101. Symmetric Tree (26.9.27)
+
+### 유형
+
+* Tree(树)
+* DFS(深度优先搜索)
+* BFS(广度优先搜索)
+* Recursion(递归)
+
+### 풀이
+
+* Binary Tree가 좌우 대칭인지 확인하려면 왼쪽 Subtree와 오른쪽 Subtree가 서로 거울 관계인지 비교한다.
+
+* 두 Node `left`, `right`를 비교하는 보조 함수 `check(left, right)`를 사용한다.
+
+* 두 Node가 모두 `nullptr`이면 서로 대칭이므로 `true`를 반환한다.
+
+* 둘 중 하나만 `nullptr`이면 Tree의 구조가 다르므로 `false`를 반환한다.
+
+* 두 Node의 값이 다르면 대칭이 아니므로 `false`를 반환한다.
+
+* 현재 Node가 같다면 바깥쪽 Child와 안쪽 Child를 서로 비교한다.
+
+```text
+left->left   ↔ right->right
+left->right  ↔ right->left
+```
+
+* 위 두 비교가 모두 `true`여야 전체 Tree가 대칭이다.
+
+### 보조 함수를 사용하는 이유
+
+* 주어진 `isSymmetric(root)` 함수는 하나의 Node만 전달받는다.
+
+* 하지만 대칭 여부를 판단하려면 왼쪽과 오른쪽의 두 Node를 동시에 비교해야 한다.
+
+* 재귀 호출에서도 계속 두 Node를 한 쌍으로 비교해야 하므로 두 Node를 Parameter로 받는 보조 함수를 사용한다.
+
+```cpp
+bool check(TreeNode* left, TreeNode* right)
+```
+
+* 즉 보조 함수를 먼저 떠올리는 것이 아니라, 재귀에 필요한 정보가 기존 함수의 Parameter만으로 부족하기 때문에 보조 함수가 필요하다.
+
+### BFS 풀이
+
+* Queue에 서로 비교해야 하는 Node를 항상 두 개씩 한 쌍으로 저장한다.
+
+```text
+[u] [v] [a] [b]
+ └───┘   └───┘
+ 비교     비교
+```
+
+* Queue에서 두 Node `u`, `v`를 꺼내 서로 대칭인지 확인한다.
+
+* 둘 다 `nullptr`이면 해당 위치는 대칭이므로 다음 비교를 진행한다.
+
+* 하나만 `nullptr`이거나 두 Node의 값이 다르면 대칭이 아니므로 `false`를 반환한다.
+
+* 현재 두 Node가 같다면 다음에 비교해야 하는 Node를 거울 방향으로 Queue에 넣는다.
+
+```text
+u->left   ↔ v->right
+u->right  ↔ v->left
+```
+
+* 재귀에서는 다음 비교를 함수 호출로 처리하지만, 반복 풀이에서는 다음에 비교할 Node Pair를 Queue에 저장한다.
+
+```text
+Recursion
+check(u->left, v->right)
+check(u->right, v->left)
+
+        ↓
+
+Iteration
+Queue에
+(u->left, v->right)
+(u->right, v->left)
+저장
+```
+
+### 배운 점
+
+* 대칭 Tree에서는 같은 방향의 Child가 아니라 반대 방향의 Child를 비교해야 한다.
+
+```text
+왼쪽의 왼쪽   ↔ 오른쪽의 오른쪽
+왼쪽의 오른쪽 ↔ 오른쪽의 왼쪽
+```
+
+* Tree 재귀에서 기존 함수의 Parameter만으로 필요한 정보를 전달할 수 없다면 보조 함수를 사용할 수 있다.
+
+* 두 Subtree를 비교하는 문제에서는 두 Node를 Parameter로 받는 재귀 함수를 생각할 수 있다.
+
+* 재귀에서는 Base Case를 이용해 두 Node가 모두 `nullptr`인 경우, 하나만 `nullptr`인 경우, 값이 다른 경우를 처리할 수 있다.
+
+* BFS/Iteration 풀이에서는 Queue에 단순히 Node를 저장하는 것이 아니라 서로 비교해야 하는 Node를 Pair 형태로 저장할 수 있다.
+
+* 재귀에서 Call Stack에 저장되던 다음 작업을 반복 풀이에서는 Queue와 같은 자료구조에 직접 저장할 수 있다.
+
+* 이 문제 역시 Level별 결과가 필요한 문제가 아니므로 `q.size()`를 이용한 Level Size 처리는 필요하지 않다.
+
+### 복잡도
+
+* DFS 시간복잡도: `O(n)`
+* DFS 공간복잡도: `O(height)`
+* BFS 시간복잡도: `O(n)`
+* BFS 공간복잡도: `O(n)`
