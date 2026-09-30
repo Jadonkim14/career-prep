@@ -2066,3 +2066,424 @@ Multiple Hazards
 
 > **Pipeline의 Hazard 처리는 Forwarding, Stall, Bubble을 적절히 조합하는 문제이며, 여러 Hazard가 동시에 발생하는 경우까지 고려하여 Pipeline Control Logic을 설계해야 한다.**
 
+## 4.5 Processor Architecture — Wrap-Up
+
+### 1. Exception Handling
+
+**Exception(예외, 异常)**은 processor가 정상적인 실행을 계속할 수 없는 상황이다.
+
+대표적인 원인:
+
+- `halt` instruction
+- 잘못된 instruction/data address
+- invalid instruction
+
+Pipeline에서는 Exception을 일으킨 instruction 뒤의 명령이 이미 실행 중일 수 있다.
+
+따라서 Exception 처리의 핵심은:
+
+> **Exception 이전 instruction은 정상적으로 완료하고, 이후 instruction은 Processor State를 변경하지 않도록 하는 것**
+
+이다.
+
+Processor State에는 다음과 같은 것들이 포함된다.
+
+- Register
+- Memory
+- Condition Code
+- PC
+
+#### Exception Ordering
+
+각 pipeline register에 `stat` 값을 함께 전달한다.
+
+주요 상태:
+
+- `SAOK` — 정상
+- `SADR` — 잘못된 address
+- `SINS` — invalid instruction
+- `SHLT` — halt
+- `SBUB` — bubble
+
+Exception은 발견 즉시 확정하지 않고 instruction과 함께 pipeline을 통과시킨 뒤 **Write-back stage에 도달했을 때 처리**한다.
+
+이를 통해 이전 instruction이 먼저 완료될 수 있다.
+
+#### Side Effect 방지
+
+Exception 이후 instruction은 Register, Memory, Condition Code 등을 변경하면 안 된다.
+
+이를 위해:
+
+- Condition Code update 차단
+- Memory stage에 Bubble 삽입
+- Exception instruction이 Write-back에 도달하면 Stall
+
+등의 Control Logic을 사용한다.
+
+실제 시스템에서는 Exception 발생 시 PC 등을 저장하고 **Exception Handler(异常处理程序)**로 이동한다.
+
+---
+
+### 2. Pipeline Performance
+
+Pipeline의 이상적인 성능은:
+
+\[
+CPI \approx 1
+\]
+
+이다.
+
+**CPI(Cycles Per Instruction)**는 instruction 하나를 완료하는 데 평균적으로 필요한 clock cycle 수이다.
+
+5-stage pipeline에서는 instruction 하나의 latency는 약 5 cycles이지만, pipeline이 채워지면 거의 매 cycle 하나의 instruction을 완료할 수 있다.
+
+#### Bubble과 CPI
+
+총 cycle을 `C`, 완료된 instruction 수를 `I`, bubble 수를 `B`라고 하면:
+
+\[
+C = I + B
+\]
+
+따라서:
+
+\[
+CPI = \frac{C}{I}
+     = 1 + \frac{B}{I}
+\]
+
+즉:
+
+> **Bubble이 증가하면 CPI가 증가하고 성능이 감소한다.**
+
+PIPE에서 주요 penalty는 다음과 같다.
+
+- Load/Use Hazard
+- Branch Misprediction
+- `ret`
+
+일반적인 계산 방식:
+
+\[
+Penalty =
+Instruction\ Frequency
+\times Problem\ Frequency
+\times Bubble\ Count
+\]
+
+PPT의 수치는 계산 방법을 설명하기 위한 예시이며 고정된 값이 아니다.
+
+---
+
+### 3. Fetch Stage Optimization
+
+기본 Fetch Stage는 다음 순서로 동작한다.
+
+```text
+PC 선택
+↓
+Instruction Memory Read
+↓
+Instruction 길이 확인
+↓
+PC Increment
+```
+
+문제는 instruction 길이를 알아야 다음 PC를 계산할 수 있기 때문에 여러 작업이 순차적으로 연결된다는 것이다.
+
+이를 개선하기 위해 일부 PC 계산을 Memory Read와 **병렬(Parallel, 并行)**로 수행한다.
+
+```text
+        Memory Read
+       ↗
+PC
+       ↘
+        Increment 계산
+```
+
+목적은 **Critical Path(关键路径)**를 줄여 clock cycle을 짧게 만드는 것이다.
+
+실제 고성능 processor에서는 Fetch Logic이 Instruction Cache와 결합되어 있으며 한 instruction만 읽는 것이 아니라 **16 또는 32 byte 정도의 cache block을 한 번에 가져올 수 있다.**
+
+또한 현재 block을 처리하면서 다음 block을 미리 fetch한다.
+
+---
+
+### 4. Modern CPU Design
+
+현대 CPU는 단순히 instruction을 program order대로 하나씩 실행하지 않는다.
+
+Instruction Control에서는:
+
+- 현재 PC를 이용한 Instruction Fetch
+- Branch Prediction
+- Instruction을 더 작은 Operation으로 변환
+- Register reference를 내부 Tag로 변환
+
+등을 수행한다.
+
+Tag는 한 operation의 결과와 이후 operation의 입력 사이의 **Data Dependency(数据依赖)**를 추적하는 데 사용된다.
+
+---
+
+### 5. Out-of-Order Execution
+
+현대 CPU에서는 operation이 반드시 program order대로 실행될 필요가 없다.
+
+다음 조건이 만족되면 먼저 실행할 수 있다.
+
+- Operand가 준비됨
+- 필요한 Functional Unit이 사용 가능함
+
+예:
+
+```text
+I1 → I2
+I3
+```
+
+`I2`가 `I1`의 결과를 기다리고 있지만 `I3`가 독립적이라면:
+
+```text
+I1 실행
+I2 대기
+I3 실행
+I2 실행
+```
+
+처럼 실행할 수 있다.
+
+이를 **Out-of-Order Execution(비순차 실행, 乱序执行)**이라고 한다.
+
+다만 내부 실행 순서가 달라도:
+
+> **최종적으로 프로그램에서 관찰되는 결과는 Sequential Execution과 동일해야 한다.**
+
+---
+
+### 6. Multiple Functional Units
+
+현대 CPU에는 여러 **Functional Unit(功能单元)**이 존재한다.
+
+예:
+
+- Integer Unit
+- Branch Unit
+- Load Unit
+- Store Unit
+- Floating-Point Add
+- Floating-Point Multiply / Divide
+
+따라서 서로 독립적인 여러 operation을 동시에 실행할 수 있다.
+
+Intel Haswell의 경우 여러 Load, Store, Integer, Floating-Point 연산을 병렬로 처리할 수 있다.
+
+PPT의 구체적인 unit 개수는 특정 processor의 예시이므로 암기할 필요는 없다.
+
+---
+
+### 7. Latency vs Throughput
+
+**Latency(延迟)**는 하나의 operation이 시작해서 결과가 나오기까지 걸리는 cycle 수이다.
+
+예:
+
+```text
+Integer Multiply Latency = 3 cycles
+```
+
+하지만 execution unit 자체가 pipelined되어 있다면 매 cycle 새로운 연산을 시작할 수도 있다.
+
+```text
+Cycle 1 → Multiply A 시작
+Cycle 2 → Multiply B 시작
+Cycle 3 → Multiply C 시작
+```
+
+따라서:
+
+> **Latency가 길다고 해서 새로운 operation을 그만큼 오래 기다렸다가 시작해야 하는 것은 아니다.**
+
+PPT의 `Cycles/Issue`는 새로운 operation을 얼마나 자주 시작할 수 있는지를 나타낸다.
+
+---
+
+### 8. Uops and Reservation Stations
+
+Intel Haswell에서는 instruction을 내부적으로 **Uop(Micro-operation)**으로 변환한다.
+
+```text
+Instruction
+↓
+Uop
+Uop
+Uop
+```
+
+Uop은 다음 조건이 만족되면 실행된다.
+
+- Operand available
+- Functional Unit available
+
+이 실행을 **Reservation Station**이 관리한다.
+
+Reservation Station의 주요 역할:
+
+- Uop 대기
+- Data Dependency 추적
+- Operand 준비 여부 확인
+- Functional Unit 할당
+
+즉 CPU는 매 순간 **현재 실행 가능한 operation을 동적으로 선택**한다.
+
+---
+
+### 9. Branch Prediction
+
+Branch 결과가 나올 때까지 기다리면 Pipeline이 정지하기 때문에 현대 CPU는 Branch 결과를 미리 예측한다.
+
+```text
+Branch
+↓
+Taken / Not Taken 예측
+↓
+예측한 경로의 instruction을 미리 Fetch
+```
+
+예측이 맞으면 Pipeline을 계속 진행할 수 있다.
+
+하지만 **Branch Misprediction(分支预测错误)**이 발생하면 잘못 가져온 instruction을 버리고 올바른 경로를 다시 Fetch해야 한다.
+
+고성능 CPU에서는 misprediction penalty가 매우 클 수 있기 때문에 Branch Prediction이 성능에 중요하다.
+
+---
+
+### 10. Branch Target Buffer
+
+**BTB(Branch Target Buffer)**는 과거 branch와 target 정보를 저장하여 다음 branch의 목적지를 빠르게 예측하는 데 사용된다.
+
+개념적으로:
+
+```text
+Branch PC
+↓
+BTB 검색
+↓
+예상 Branch Target
+↓
+Instruction Fetch
+```
+
+PPT의 BTB 크기와 history bit 수는 Intel Haswell의 구체적인 예시이므로 암기할 필요는 없다.
+
+---
+
+### 11. Branch History and State Machine
+
+Branch Predictor는 이전 Branch 결과를 이용해 다음 결과를 예측할 수 있다.
+
+단순히 직전 결과만 보는 것이 아니라 반복되는 패턴도 활용할 수 있다.
+
+예:
+
+```text
+Taken
+Not Taken
+Taken
+Not Taken
+...
+```
+
+PPT에서는 다음과 같은 4-state predictor를 사용한다.
+
+```text
+No! ← No? ← Yes? ← Yes!
+```
+
+- `Yes!` — 강하게 Taken 예측
+- `Yes?` — 약하게 Taken 예측
+- `No?` — 약하게 Not Taken 예측
+- `No!` — 강하게 Not Taken 예측
+
+Branch가 Taken이면 오른쪽으로, Not Taken이면 왼쪽으로 이동한다.
+
+이렇게 하면 한 번의 예외적인 결과 때문에 예측 방향이 즉시 바뀌는 것을 방지할 수 있다.
+
+---
+
+### 12. Processor Architecture 핵심 정리
+
+Processor는 모든 instruction마다 별도의 hardware를 만드는 것이 아니라 공통 hardware를 공유하고 **Control Logic(控制逻辑)**으로 동작을 결정한다.
+
+주요 구성:
+
+- Register
+- Memory
+- ALU
+- MUX
+- Pipeline Register
+- Control Logic
+
+Processor 동작은 크게 두 부분으로 볼 수 있다.
+
+```text
+State
+→ Memory / Clocked Register
+
+Computation
+→ Combinational Logic
+```
+
+Clock에 따라:
+
+```text
+Current State
+↓
+Combinational Logic
+↓
+Next State
+↓
+Clock
+↓
+New State
+```
+
+형태로 상태가 변화한다.
+
+성능 향상을 위해:
+
+- Pipelining
+- Forwarding
+- Branch Prediction
+- Parallel Execution
+- Out-of-Order Execution
+
+등을 사용할 수 있다.
+
+하지만 어떤 최적화를 사용하더라도 최종적으로는:
+
+> **ISA가 정의한 프로그램의 동작을 유지해야 한다.**
+
+### 최종 핵심
+
+```text
+Pipeline
+↓
+여러 instruction을 겹쳐 실행
+↓
+Hazard 발생
+↓
+Forwarding / Stall / Bubble로 처리
+↓
+Branch Prediction으로 Control Hazard 감소
+↓
+여러 Functional Unit으로 병렬 실행
+↓
+실행 가능한 Operation부터 Out-of-Order 실행
+↓
+최종 결과는 Sequential ISA와 동일하게 유지
+```
+
+Processor Architecture의 핵심은 **성능을 높이기 위해 내부 실행은 점점 더 병렬적이고 복잡하게 만들면서도, 외부에서는 ISA가 정의한 정확한 프로그램 동작을 유지하는 것**이다.

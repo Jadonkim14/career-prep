@@ -1,3 +1,139 @@
+# Tree 복습
+
+# Tree 복습
+
+## 1. Maximum Depth
+
+```cpp
+if (root == nullptr) return 0;
+
+return max(maxDepth(root->left),
+           maxDepth(root->right)) + 1;
+```
+
+- 핵심: `max(left, right) + 1`
+- 시간복잡도: `O(n)`
+- 이유: 모든 노드를 한 번씩 방문
+
+---
+
+## 2. Same Tree
+
+```cpp
+if (p == nullptr && q == nullptr) return true;
+if (p == nullptr || q == nullptr) return false;
+if (p->val != q->val) return false;
+
+return isSameTree(p->left, q->left) &&
+       isSameTree(p->right, q->right);
+```
+
+- 둘 다 `nullptr` → `true`
+- 하나만 `nullptr` → `false`
+- 값 다름 → `false`
+- 왼쪽과 오른쪽 모두 같아야 함 → `&&`
+
+---
+
+## 3. Invert Binary Tree
+
+```cpp
+if (root == nullptr) return nullptr;
+
+swap(root->left, root->right);
+
+invertTree(root->left);
+invertTree(root->right);
+```
+
+- 핵심: 왼쪽 ↔ 오른쪽 교환
+- 시간복잡도: `O(n)`
+
+---
+
+## 4. Path Sum
+
+```cpp
+int remain = targetSum - root->val;
+```
+
+리프 노드에서:
+
+```cpp
+remain == 0
+```
+
+인지 확인.
+
+재귀:
+
+```cpp
+return hasPathSum(root->left, remain) ||
+       hasPathSum(root->right, remain);
+```
+
+- 핵심: 내려가면서 `targetSum - root->val`
+- 반드시 **leaf에서 합 확인**
+- 한쪽 경로만 성공해도 됨 → `||`
+
+---
+
+## 5. Balanced Binary Tree
+
+조건:
+
+```text
+|leftHeight - rightHeight| <= 1
+```
+
+주의:
+
+각 노드마다 서브트리 높이를 다시 계산하면 중복 계산 발생.
+
+```text
+최악 O(n²)
+```
+
+---
+
+# Tree 문제별 핵심 패턴
+
+| 문제 | 핵심 |
+|---|---|
+| Maximum Depth | `max(left, right) + 1` |
+| Same Tree | 왼쪽과 오른쪽 모두 같아야 함 `&&` |
+| Invert Tree | 왼쪽/오른쪽 교환 후 양쪽 재귀 |
+| Path Sum | 한쪽 경로만 성공해도 됨 `||` |
+| Balanced Tree | 높이 차이 확인 + 중복 높이 계산 주의 |
+
+---
+
+# DFS 재귀 기본 사고방식
+
+Tree 문제를 보면 먼저 다음 순서로 생각한다.
+
+```text
+1. 종료 조건은 무엇인가?
+        ↓
+2. 왼쪽 서브트리에서 무엇을 얻는가?
+        ↓
+3. 오른쪽 서브트리에서 무엇을 얻는가?
+        ↓
+4. 두 결과를 어떻게 합치는가?
+```
+
+---
+
+# 한 줄 요약
+
+```text
+Tree DFS =
+종료 조건을 잡고
+→ 왼쪽 재귀
+→ 오른쪽 재귀
+→ 두 결과를 문제에 맞게 결합한다.
+```
+
 # 0104. Maximum Depth of Binary Tree (26.9.16)
 
 **### 유형**
