@@ -153,7 +153,7 @@ image[mx][my] = color;
 
 - `m`은 이미지의 행 수, `n`은 열 수이다.
 
-# 0200. Number of Islands (26.10.3)
+# 0200. Number of Islands (26.10.3 ~ 4)
 
 ## 유형
 
@@ -195,7 +195,7 @@ vector<vector<bool>> isVisited;
 vector<vector<bool>> isVisited(m, vector<bool>(n, false));
 ```
 
-- 혹은 문제에서 제시된 최대 크기의 2차원 배열
+- 또는 문제에서 제시된 최대 크기의 고정 배열을 사용할 수 있다.
 
 ## 공식 풀이 — DFS
 
@@ -224,6 +224,106 @@ grid[row - 1][col] = '0';
 - 공식 BFS 구현은 원본 `grid`를 수정하므로 별도 방문 배열이 필요 없다.
 - 재귀 호출이 없어 스택 오버플로 위험을 피할 수 있다.
 
+## 직접 구현 — BFS 최적화 과정
+
+**① DFS → BFS 전환**
+
+- 기존 DFS의 재귀 호출을 `queue`를 사용하는 반복문으로 변경했다.
+- 처음에는 `isVisited` 배열을 그대로 유지했다.
+
+```cpp
+queue<pair<int, int>> q;
+q.push({row, col});
+
+while (!q.empty()) {
+    pair<int, int> p = q.front();
+    q.pop();
+
+    // Explore four directions
+}
+```
+
+- 시작점과 새로 발견한 육지는 큐에 삽입할 때 방문 처리했다.
+- 시간복잡도 `O(MN)`, 공간복잡도 `O(MN)`.
+
+**② BFS + visited → BFS + grid 수정**
+
+- 별도의 `isVisited` 배열을 제거했다.
+- 방문한 육지를 `'0'`으로 변경하여 중복 탐색을 방지했다.
+
+```cpp
+grid[row][col] = '0';
+q.push({row, col});
+```
+
+인접한 육지를 발견했을 때도 동일하게 처리했다.
+
+```cpp
+if (newRow >= 0 && newRow < m &&
+    newCol >= 0 && newCol < n &&
+    grid[newRow][newCol] == '1') {
+
+    grid[newRow][newCol] = '0';
+    q.push({newRow, newCol});
+}
+```
+
+- 시간복잡도는 `O(MN)`으로 동일하다.
+- 공간복잡도는 `O(MN)`에서 `O(min(M,N))`으로 개선되었다.
+- 단, 원본 `grid`가 변경된다.
+
+## C++ 문법 — pair와 queue
+
+```cpp
+queue<pair<int, int>> q;
+```
+
+- `pair<int, int>`: 두 정수를 하나의 객체로 저장한다.
+- `queue<pair<int, int>>`: 정수 쌍을 FIFO(先进先出) 순서로 관리한다.
+- BFS에서는 주로 `(row, col)` 좌표를 저장한다.
+
+```cpp
+q.push({2, 3});  // Insert
+q.emplace(4, 5); // Construct and insert
+
+pair<int, int> p = q.front();
+
+int row = p.first;
+int col = p.second;
+
+q.pop(); // Remove front element
+```
+
+- `front()`: 맨 앞 원소 확인
+- `pop()`: 맨 앞 원소 제거 (반환값 없음)
+- `push()`: 원소 삽입
+- `emplace()`: 원소를 큐 내부에서 직접 생성
+- `empty()`: 큐가 비었는지 확인
+
+## C++17 문법 — Structured Binding
+
+구조적 바인딩(结构化绑定)은 `pair` 등의 객체를 여러 변수로 분리하는 문법이다.
+
+기존 방식:
+
+```cpp
+pair<int, int> p = q.front();
+int row = p.first;
+int col = p.second;
+```
+
+C++17 방식:
+
+```cpp
+auto [row, col] = q.front();
+q.pop();
+```
+
+- `auto`가 각 변수의 자료형을 추론한다.
+- `row`에는 `first`, `col`에는 `second` 값이 저장된다.
+- 기본 `auto`는 값을 복사하므로 이후 `q.pop()`을 호출해도 변수는 유효하다.
+- 성능 최적화보다는 가독성 개선에 해당한다.
+
 ## 공식 풀이 — Union-Find
 
 - Union-Find(并查集)는 연결된 육지를 같은 집합으로 병합하는 방법이다.
@@ -242,7 +342,8 @@ grid[row - 1][col] = '0';
 | BFS + grid 수정 | O(MN) | O(min(M,N)) |
 | Union-Find | O(MNα(MN)) | O(MN) |
 
-- BFS의 `O(min(M,N))`은 공식 풀이처럼 원본 격자를 수정하는 구현 기준이다.
+- BFS의 `O(min(M,N))`은 4방향 격자에서 발견 즉시 방문 처리하는 구현 기준이다.
+- BFS 큐에는 방문한 모든 칸이 아니라 **앞으로 탐색할 경계 부근의 칸**만 저장된다.
 - DFS는 방문 배열을 제거해도 재귀 호출 스택이 필요하다.
 - BFS도 별도 방문 배열을 사용하면 전체 공간복잡도가 `O(MN)`이 된다.
 
@@ -258,26 +359,28 @@ grid[row - 1][col] = '0';
 | 깊은 재귀가 예상되는 경우 | 반복형 DFS / BFS |
 
 - 이번 문제에서는 DFS와 BFS 모두 적절하다.
-- 원본 수정이 가능하다면 공식 BFS 구현은 공간 효율성과 재귀 안정성 측면에서 유리하다.
-- 하지만 구현이 간단한 DFS도 충분히 적절한 풀이이다.
+- 원본 수정이 가능하다면 BFS + grid 수정은 공간 효율성과 재귀 안정성 측면에서 유리하다.
+- 구현이 간단한 DFS도 충분히 적절한 풀이이다.
 
 ## 시간복잡도와 실제 실행시간
 
 - 시간복잡도는 입력 크기에 따른 연산량의 증가 추세를 나타낸다.
 - 실제 실행시간은 함수 호출, 메모리 접근, 자료구조, 컴파일러 최적화 등에 영향을 받는다.
-- 따라서 **시간복잡도가 낮다고 모든 입력에서 반드시 빠른 것은 아니다.**
+- **시간복잡도가 낮다고 모든 입력에서 반드시 빠른 것은 아니다.**
 - DFS와 BFS는 모두 `O(MN)`이지만 실제 실행시간은 다를 수 있다.
 - 코딩테스트에서는 미세한 실행시간보다 시간·공간 제한과 구현 안정성을 우선한다.
 
 ## 배운 점
 
 - 섬의 개수를 구하는 것은 연결 요소(连通分量)의 개수를 구하는 것과 같다.
-- DFS는 연결된 육지 전체를 방문 처리하고, 이중 반복문은 새로운 섬을 발견한다.
+- DFS/BFS로 하나의 섬 전체를 방문 처리하면 중복 계산을 방지할 수 있다.
 - `vector`는 선언만 하면 비어 있으므로 사용 전에 크기를 초기화해야 한다.
-- 방문 배열 대신 원본 `grid`를 수정해 중복 방문을 방지할 수 있다.
+- 방문 배열 대신 원본 `grid`를 수정해 추가 메모리를 절약할 수 있다.
 - BFS에서는 큐에 삽입하는 순간 방문 처리해야 한다.
+- `queue<pair<int, int>>`로 2차원 좌표를 관리할 수 있다.
+- C++17의 `auto [row, col]`로 `pair`의 값을 간결하게 분리할 수 있다.
+- BFS 큐에는 전체 방문 기록이 아닌 탐색 대기 좌표만 저장된다.
 - DFS는 재귀 호출 스택, BFS는 큐를 사용한다.
-- DFS와 BFS의 공간복잡도는 방문 처리 방식에 따라 달라진다.
 - Union-Find는 연결된 육지를 같은 집합으로 병합하는 또 다른 방법이다.
 - 알고리즘 선택 시 시간복잡도뿐 아니라 공간복잡도와 구현 안정성도 고려해야 한다.
 
@@ -289,7 +392,7 @@ grid[row - 1][col] = '0';
 
 - **BFS (grid 수정)**
   - 시간복잡도: `O(MN)`
-  - 공간복잡도: `O(min(M,N))` — 공식 구현의 큐
+  - 공간복잡도: `O(min(M,N))` — BFS 큐
 
 - **Union-Find**
   - 시간복잡도: `O(MNα(MN))`
