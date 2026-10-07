@@ -399,3 +399,218 @@ q.pop();
   - 공간복잡도: `O(MN)` — parent, rank 배열
 
 - `M`은 행 수, `N`은 열 수이다.
+
+# 0695. Max Area of Island (26.10.7)
+
+## 유형
+
+- Graph(图)
+- DFS(深度优先搜索)
+- BFS(广度优先搜索)
+- Connected Components(连通分量)
+- Matrix / Grid Traversal(矩阵遍历)
+
+## 처음 접근
+
+- 방문하지 않은 육지(`1`)를 발견하면 DFS를 시작했다.
+- DFS가 연결된 모든 육지를 방문하면서 해당 섬의 넓이를 반환하도록 구현했다.
+- 방문 여부는 별도의 배열 대신 원본 `grid`를 `0`으로 변경해 처리했다.
+
+```cpp
+if (grid[i][j] == 1) {
+    int temp = visit(grid, i, j);
+
+    if (temp > maxArea) {
+        maxArea = temp;
+    }
+}
+```
+
+- `Number of Islands`가 섬의 개수를 세는 문제라면, 이번 문제는 **각 Connected Component의 크기를 계산하는 문제**이다.
+
+## 직접 구현 — DFS
+
+DFS 함수는 현재 위치와 연결된 육지의 개수를 반환한다.
+
+```cpp
+int visit(vector<vector<int>>& grid, int r, int c) {
+    grid[r][c] = 0;
+    int sizeIsl = 1;
+
+    for (int i = 0; i < 4; i++) {
+        int newRow = r + dr[i];
+        int newCol = c + dc[i];
+
+        if (newRow < 0 || newRow >= grid.size() ||
+            newCol < 0 || newCol >= grid[0].size()) {
+            continue;
+        }
+
+        if (grid[newRow][newCol] == 1) {
+            sizeIsl += visit(grid, newRow, newCol);
+        }
+    }
+
+    return sizeIsl;
+}
+```
+
+핵심은 다음 부분이다.
+
+```cpp
+sizeIsl += visit(grid, newRow, newCol);
+```
+
+- 현재 칸의 넓이를 `1`로 시작한다.
+- 연결된 육지를 DFS로 탐색한다.
+- 각 재귀 호출이 반환한 면적을 누적한다.
+- 최종적으로 하나의 섬 전체 면적을 반환한다.
+
+## 직접 구현 — BFS
+
+DFS의 재귀 호출을 `queue` 기반 반복문으로 변경했다.
+
+```cpp
+queue<pair<int,int>> q;
+
+grid[r][c] = 0;
+q.push({r, c});
+
+int sizeIsl = 1;
+```
+
+큐가 빌 때까지 상하좌우를 탐색한다.
+
+```cpp
+while (!q.empty()) {
+    pair<int,int> cur = q.front();
+    q.pop();
+
+    for (int i = 0; i < 4; i++) {
+        int newRow = cur.first + dr[i];
+        int newCol = cur.second + dc[i];
+
+        if (newRow < 0 || newRow >= gridRow ||
+            newCol < 0 || newCol >= gridCol) {
+            continue;
+        }
+
+        if (grid[newRow][newCol] == 1) {
+            grid[newRow][newCol] = 0;
+            q.push({newRow, newCol});
+            sizeIsl++;
+        }
+    }
+}
+```
+
+- 새로운 육지를 발견하면 즉시 `0`으로 변경한다.
+- **큐에 삽입하는 순간 방문 처리해야 중복 삽입을 방지할 수 있다.**
+- 새로운 육지를 하나 발견할 때마다 `sizeIsl++` 한다.
+
+## DFS / BFS 차이
+
+| 방식 | 면적 계산 방법 | 사용 자료구조 |
+|---|---|---|
+| DFS | 재귀 반환값을 누적 | Call Stack |
+| BFS | 새 육지를 발견할 때 카운트 | Queue |
+
+DFS:
+
+```cpp
+sizeIsl += visit(grid, newRow, newCol);
+```
+
+BFS:
+
+```cpp
+grid[newRow][newCol] = 0;
+q.push({newRow, newCol});
+sizeIsl++;
+```
+
+두 방식 모두 하나의 섬 전체를 방문한 뒤 그 면적을 계산한다.
+
+## 0200. Number of Islands와 차이
+
+`Number of Islands`:
+
+```text
+DFS/BFS 한 번 시작
+→ 섬 하나 전체 방문
+→ 섬 개수 +1
+```
+
+`Max Area of Island`:
+
+```text
+DFS/BFS 한 번 시작
+→ 섬 하나 전체 방문
+→ 방문한 칸의 개수 계산
+→ 최대값 갱신
+```
+
+즉 두 문제 모두 Connected Component 탐색 문제이지만,
+
+- `0200`은 **Connected Component의 개수**
+- `0695`는 **Connected Component의 최대 크기**
+
+를 구한다.
+
+## 방문 처리
+
+별도의 `visited` 배열 대신 원본 `grid`를 수정했다.
+
+```cpp
+grid[r][c] = 0;
+```
+
+장점:
+
+- 별도 방문 배열이 필요 없다.
+- 이미 방문한 육지를 다시 탐색하지 않는다.
+
+단점:
+
+- 원본 `grid`가 변경된다.
+
+원본 데이터를 보존해야 한다면 별도의 `visited` 배열을 사용해야 한다.
+
+## DFS / BFS 선택 기준
+
+| 상황 | 적합한 방식 |
+|---|---|
+| 연결 요소 탐색 | DFS / BFS |
+| 섬의 개수 계산 | DFS / BFS |
+| 섬의 넓이 계산 | DFS / BFS |
+| 가중치 없는 최단 거리 | BFS |
+| 단계별 확산 | BFS |
+| 깊은 재귀가 위험한 경우 | 반복형 DFS / BFS |
+
+이번 문제에서는 DFS와 BFS 모두 적절하다.
+
+## 배운 점
+
+- 섬 하나는 하나의 Connected Component(连通分量)로 볼 수 있다.
+- DFS 함수가 단순 방문뿐 아니라 **연결된 영역의 크기를 반환하도록 설계할 수 있다.**
+- BFS에서는 큐에 삽입하는 순간 방문 처리해야 한다.
+- 원본 `grid`를 수정하면 별도의 방문 배열을 제거할 수 있다.
+- DFS는 재귀 호출 스택을 사용하고, BFS는 `queue`를 사용한다.
+- `Number of Islands`와 기본 탐색 구조는 같고, 무엇을 계산하느냐만 다르다.
+- DFS/BFS 모두 모든 칸을 최대 한 번 방문하므로 시간복잡도는 `O(MN)`이다.
+
+## 복잡도
+
+### DFS
+
+- 시간복잡도: `O(MN)`
+- 공간복잡도: `O(MN)`
+  - 최악의 경우 재귀 호출 깊이가 전체 육지 수까지 증가할 수 있다.
+
+### BFS
+
+- 시간복잡도: `O(MN)`
+- 공간복잡도: `O(MN)`
+  - 최악의 경우 큐에 많은 탐색 대기 좌표가 저장될 수 있다.
+
+`M`은 행 수, `N`은 열 수이다.
